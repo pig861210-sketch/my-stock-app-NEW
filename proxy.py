@@ -220,6 +220,59 @@ def diag(code):
 
     return res
 
+def scrape_fundamentals(code):
+    """Yahoo quoteSummary 抓本益比、股價淨值比、殖利率、EPS（公開、即時）。"""
+    code = str(code).strip()
+    for suffix in (".TW", ".TWO"):
+        sym = code + suffix
+        opener, crumb = _yahoo_session()
+        data = None
+        for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+            url = ("https://" + host + "/v10/finance/quoteSummary/"
+                   + urllib.parse.quote(sym)
+                   + "?modules=summaryDetail,defaultKeyStatistics,financialData")
+            if crumb:
+                url += "&crumb=" + urllib.parse.quote(crumb)
+            try:
+                with opener.open(urllib.request.Request(url, headers=HDRS), timeout=12) as r:
+                    data = json.loads(r.read().decode("utf-8", "replace"))
+                break
+            except Exception as e:
+                print(f"[-] Yahoo fundamentals {sym}@{host} 失敗: {e}")
+                continue
+        if data is None:
+            continue
+        try:
+            res = data["quoteSummary"]["result"][0]
+        except Exception:
+            continue
+        sd = res.get("summaryDetail") or {}
+        dks = res.get("defaultKeyStatistics") or {}
+
+        def rawv(d, k):
+            v = d.get(k)
+            return v.get("raw") if isinstance(v, dict) else v
+
+        pe = rawv(sd, "trailingPE")
+        pb = rawv(dks, "priceToBook")
+        eps = rawv(dks, "trailingEps")
+        dy = rawv(sd, "dividendYield")
+        if dy is None:
+            dy = rawv(sd, "trailingAnnualDividendYield")
+        yld = (dy * 100) if (dy is not None and dy < 1) else dy
+        out = {}
+        if pe is not None and pe > 0:
+            out["pe"] = round(float(pe), 2)
+        if pb is not None and pb > 0:
+            out["pb"] = round(float(pb), 2)
+        if eps is not None:
+            out["eps"] = round(float(eps), 2)
+        if yld is not None and yld > 0:
+            out["yield"] = round(float(yld), 2)
+        if out:
+            return out
+    return {}
+
 def scrape_targets(code):
     """先試 Yahoo 股市（公開、依代號、結構穩定），無資料時回退鉅亨 cnyes（公開）。"""
     code = str(code).strip()
@@ -301,6 +354,22 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, body, "application/json; charset=utf-8")
             except Exception as e:
                 msg = json.dumps({"error": str(e), "targets": []}).encode("utf-8")
+                self._send(502, msg, "application/json")
+            return
+
+        # 2d) 基本面（PE/PB/殖利率/EPS）/fundamentals?code=2330
+        if parsed.path == "/fundamentals":
+            qs = urllib.parse.parse_qs(parsed.query)
+            code = qs.get("code", [None])[0]
+            if not code:
+                self._send(400, b'{"error":"missing code"}', "application/json")
+                return
+            try:
+                data = scrape_fundamentals(code)
+                body = json.dumps({"code": code, "fundamentals": data}, ensure_ascii=False).encode("utf-8")
+                self._send(200, body, "application/json; charset=utf-8")
+            except Exception as e:
+                msg = json.dumps({"error": str(e), "fundamentals": {}}).encode("utf-8")
                 self._send(502, msg, "application/json")
             return
 

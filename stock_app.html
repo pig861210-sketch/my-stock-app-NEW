@@ -509,6 +509,14 @@ function fetchInstTargets(code){
       return j.targets.map(function(e){return {ts:now,date:e.date,firm:e.firm,rating:e.rating,price:e.price};});
     }).catch(function(){clearTimeout(t);return null;});
 }
+// 基本面（PE/PB/殖利率/EPS）經 proxy 抓 Yahoo；抓不到回 null 改用 TWSE/示範
+function fetchFundamentals(code){
+  var ctrl=new AbortController(), t=setTimeout(function(){ctrl.abort();},7000);
+  return fetch(PROXY_BASE+"/fundamentals?code="+encodeURIComponent(code),{signal:ctrl.signal})
+    .then(function(r){clearTimeout(t);if(!r.ok)throw 0;return r.json();})
+    .then(function(j){ return (j&&j.fundamentals&&Object.keys(j.fundamentals).length)?j.fundamentals:null; })
+    .catch(function(){clearTimeout(t);return null;});
+}
 function fetchMarginDaily(code){
   var start=new Date(); start.setDate(start.getDate()-30);
   return fetchAny(fmURL("TaiwanStockMarginPurchaseShortSale",code,ymd(start)),12000).then(function(j){
@@ -595,11 +603,12 @@ function fetchAllStockInfo(){
 }
 var cache={};
 function ensureAll(key,url){
-  if(cache[key]!==undefined) return Promise.resolve(cache[key]);
+  if(cache[key]) return Promise.resolve(cache[key]);   // 只有成功(非空)才會被快取
   return fetchVia(url,12000).then(function(data){
     var arr=Array.isArray(data)?data:(data&&Array.isArray(data.data)?data.data:null);
-    cache[key]=(arr&&arr.length)?arr:null; return cache[key];
-  }).catch(function(){ cache[key]=null; return null; });
+    if(arr&&arr.length){ cache[key]=arr; return arr; }
+    return null;                                        // 失敗不快取 → 下次重抓，避免永久卡示範資料
+  }).catch(function(){ return null; });
 }
 function fetchMonth(code,ym){
   var url=TWSE.www+"/rwd/zh/afterTrading/STOCK_DAY?date="+ym+"01&stockNo="+code+"&response=json";
@@ -1280,9 +1289,16 @@ function buildView(code,fallbackName,rows,demo,updating){
   var shortDelta=marginLive?((shortBalance!=null&&shortPrev!=null)?shortBalance-shortPrev:null):demo.shortDelta;
 
   var valLive=!!valRow;
-  var pe=valLive?toNum(field(valRow,["PEratio","本益比"])):demo.pe;
-  var yieldPct=valLive?toNum(field(valRow,["DividendYield","殖利率"])):demo.yieldPct;
-  var pb=valLive?toNum(field(valRow,["PBratio","股價淨值比"])):demo.pb;
+  var fundExt=rows.fundExt||null;                      // Yahoo 即時基本面（PE/PB/殖利率/EPS）
+  var twPe=valLive?toNum(field(valRow,["PEratio","本益比"])):null;
+  var twYield=valLive?toNum(field(valRow,["DividendYield","殖利率"])):null;
+  var twPb=valLive?toNum(field(valRow,["PBratio","股價淨值比"])):null;
+  // 優先用 Yahoo 即時值，其次 TWSE，再次示範
+  var pe=(fundExt&&fundExt.pe!=null)?fundExt.pe:(twPe!=null?twPe:demo.pe);
+  var yieldPct=(fundExt&&fundExt.yield!=null)?fundExt.yield:(twYield!=null?twYield:demo.yieldPct);
+  var pb=(fundExt&&fundExt.pb!=null)?fundExt.pb:(twPb!=null?twPb:demo.pb);
+  var eps=(fundExt&&fundExt.eps!=null)?fundExt.eps:null;   // EPS 目前僅 Yahoo 提供
+  var fundLive=!!(fundExt&&Object.keys(fundExt).length)||valLive;
 
   // 融資融券近 10 日（FinMind，舊→新）；無則示範
   var marginDailyLive=(rows.marginDailyLive&&rows.marginDailyLive.length)?rows.marginDailyLive:null;
@@ -1394,7 +1410,7 @@ function buildView(code,fallbackName,rows,demo,updating){
     institutional:{live:instLive||instOfficialAll,officialAll:instOfficialAll,totalNet:totalNet,instChartData:instChartData,daily:instDaily},
     margin:{live:marginOfficialAll||marginLive,officialAll:marginOfficialAll,daily:marginDaily,marginBalance:marginBalance,marginDelta:marginDelta,shortBalance:shortBalance,shortDelta:shortDelta},
     chips:chips,
-    fundamentals:{live:valLive,pe:pe,yieldPct:yieldPct,pb:pb},
+    fundamentals:{live:fundLive,pe:pe,yieldPct:yieldPct,pb:pb,eps:eps},
     industryInfo:{live:indLive,industry:industry,indAvg:indAvg,peVsIndustry:peVsIndustry},
     diag:{capital:capital,relVol:relVol,grossMargin:grossMargin,debtRatio:debtRatio,forceCyclical:forceCyclical,weekMACD:weekMACD,dayGoldenCross:(technical?!!technical.goldenCross:false),
       monthsSinceReport:monthsSinceReport,reportDate:repDate,recencyOverridden:(recencyOverride[code]!=null),atr:atrVal,ma20:(technical?technical.ma20:null),ma60:(technical?technical.ma60:null),cyclicalAuto:cycAuto.hit,cyclicalReason:cycAuto.reason},
@@ -1765,8 +1781,9 @@ function renderMain(st){
   /* 肆 基本面 */
   var bVal="";
   if(st.isETF){ bVal='<p class="msg">ETF 不適用本益比、股價淨值比等個股評價指標。</p>'; }
-  else{ bVal='<div class="grid3">'+
+  else{ bVal='<div class="grid2x2">'+
     stat("本益比",fmtNum(st.fundamentals.pe,2))+
+    stat("EPS",st.fundamentals.eps!=null?fmtNum(st.fundamentals.eps,2):"—")+
     stat("殖利率",st.fundamentals.yieldPct!=null?fmtNum(st.fundamentals.yieldPct,2)+"%":"—")+
     stat("股價淨值比",fmtNum(st.fundamentals.pb,2))+'</div>'; }
   html+=accItem("val","基本面評價",st.fundamentals.live,bVal);
@@ -1843,9 +1860,12 @@ function renderMain(st){
     var p=st.technical.pattern;
     if(p){
       var pc=p.tone==="bull"?COL.red:p.tone==="bear"?COL.green:COL.gold;
+      var sug=p.tone==="bull"?"建議做多":p.tone==="bear"?"建議放空":"";
       bTech+='<div class="pattern" style="border-color:'+pc+'">'+
         '<div class="pl"><span class="plk">均線格局：</span><span style="color:'+pc+'">'+p.label+'</span></div>'+
-        '<div class="pd">'+p.desc+'</div></div>';
+        '<div class="pd">'+p.desc+'</div>'+
+        (sug?'<div style="margin-top:5px"><span style="color:'+pc+';font-weight:600;font-size:15px">'+sug+'</span></div>':'')+
+        '</div>';
     }
     // 止跌訊號（一律顯示；僅「有」時才計入評分）
     var sf=stopFallSignal(st.technical.chartData);
@@ -2004,7 +2024,8 @@ function loadStock(rawCode,fallbackName){
     fetchBalanceMetrics(code).catch(function(){return null;}),
     fetchMarginDaily(code).catch(function(){return null;}),
     fetchGrossMargin(code).catch(function(){return null;}),
-    fetchInstTargets(code).catch(function(){return null;})
+    fetchInstTargets(code).catch(function(){return null;}),
+    fetchFundamentals(code).catch(function(){return null;})
   ]).then(function(res){
     var yahoo=res[6];
     var histKey="hist_"+code, histP;
@@ -2031,7 +2052,7 @@ function loadStock(rawCode,fallbackName){
       revRow:findByCode(res[4],code,["公司代號","Code"]),
       indAvg:indAvg, hist:bundle.hist,
       realtime:(yahoo&&yahoo.rt)?yahoo.rt:res[5],
-      monthlyRevenue:res[7], instDailyLive:res[8], indexHist:res[9], balanceMetrics:res[10], marginDailyLive:res[11], grossMargin:res[12], instTargets:res[13]
+      monthlyRevenue:res[7], instDailyLive:res[8], indexHist:res[9], balanceMetrics:res[10], marginDailyLive:res[11], grossMargin:res[12], instTargets:res[13], fundExt:res[14]
     };
     lastRowsByCode[code]=rows;
     renderMain(buildView(code,fallbackName,rows,demo,false));
