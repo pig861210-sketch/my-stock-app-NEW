@@ -1,0 +1,2125 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="茫茫股海" />
+<meta name="theme-color" content="#EFE7D6" />
+<title>茫茫股海 — 個股分析</title>
+<style>
+  :root{
+    --paper:#EFE7D6; --paperDeep:#E6DBC6; --paperEdge:#DCCFB4;
+    --rule:#C9B894; --ruleSoft:#D8CAAC;
+    --coffee:#4A3826; --coffeeMid:#6F5A41; --taupe:#8A7458; --faint:#AD9B7C;
+    --red:#A8392B; --green:#4F6B47; --gold:#9C6B2E;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--coffee);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  .serif{font-family:"Songti TC","Noto Serif TC",Georgia,"PingFang TC",serif;}
+  .wrap{max-width:540px;margin:0 auto;min-height:100vh;background:var(--paper);
+    box-shadow:0 0 0 1px var(--paperEdge);}
+  header{position:sticky;top:0;z-index:10;background:var(--paper);
+    border-bottom:2px solid var(--coffee);
+    padding:max(18px,env(safe-area-inset-top)) 22px 14px;}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .seal{width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--red);color:var(--red);font-size:19px;border-radius:5px;
+    transform:rotate(-3deg);background:var(--paperDeep);}
+  .brand h1{font-size:19px;letter-spacing:.05em;margin:0;color:var(--coffee);}
+  .brand p{font-size:11.5px;color:var(--taupe);margin:2px 0 0;}
+  .upd{font-size:10.5px;color:var(--gold);margin-left:auto;animation:pulse 1.3s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+  form.search{display:flex;gap:8px;margin-bottom:12px;}
+  .acwrap{flex:1;position:relative;}
+  .ibox{display:flex;align-items:center;gap:8px;padding:0 12px;
+    border:1px solid var(--rule);border-radius:5px;background:var(--paperDeep);}
+  .ibox input{flex:1;padding:10px 0;font-size:15px;border:0;outline:none;background:transparent;
+    color:var(--coffee);}
+  .ibox input::placeholder{color:var(--faint);}
+  .aclist{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;margin:0;padding:4px;
+    list-style:none;background:var(--paper);border:1px solid var(--rule);border-radius:6px;
+    box-shadow:0 8px 24px rgba(74,56,38,.18);max-height:280px;overflow-y:auto;display:none;}
+  .aclist.show{display:block;}
+  .aclist li{display:flex;align-items:baseline;gap:8px;padding:9px 10px;border-radius:4px;cursor:pointer;}
+  .aclist li:active,.aclist li.hl{background:var(--paperDeep);}
+  .aclist .acn{font-size:14px;color:var(--coffee);}
+  .aclist .acc{font-size:12px;color:var(--taupe);font-family:ui-monospace,monospace;margin-left:auto;}
+  .idxband{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;
+    padding:12px 22px;background:var(--paperDeep);border-bottom:1px solid var(--rule);}
+  .idxband::-webkit-scrollbar{display:none;}
+  .idxtile{flex:0 0 auto;min-width:118px;padding:8px 12px;border:1px solid var(--rule);
+    border-radius:7px;background:var(--paper);}
+  .idxtile .il{font-size:11px;color:var(--taupe);}
+  .idxtile .iv{font-size:17px;line-height:1.2;margin-top:3px;font-family:ui-monospace,monospace;}
+  .idxtile .ic{font-size:11px;margin-top:2px;font-family:ui-monospace,monospace;}
+  .idxnote{font-size:10.5px;color:var(--faint);padding:0 22px 10px;background:var(--paperDeep);border-bottom:1px solid var(--rule);}
+  .btn{padding:0 20px;font-size:14px;font-weight:500;border:0;border-radius:5px;
+    background:var(--coffee);color:var(--paper);}
+  .watchrow{display:flex;align-items:center;gap:8px;}
+  .wbtn{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--coffeeMid);
+    border:1px solid var(--rule);background:var(--paperDeep);border-radius:6px;padding:9px 20px;}
+  .wbtn.on{background:var(--coffee);color:var(--paper);border-color:var(--coffee);}
+  .watchpanel{display:none;}
+  .watchpanel.show{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+  .wp-head{display:flex;align-items:center;justify-content:space-between;}
+  .wp-head .t{font-size:12px;color:var(--taupe);}
+  .wp-edit{font-size:12px;color:var(--coffeeMid);border:1px solid var(--rule);background:transparent;
+    border-radius:999px;padding:4px 12px;}
+  .wp-edit.on{color:var(--red);border-color:var(--red);}
+  .wp-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .chips{flex:1;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{white-space:nowrap;display:inline-flex;align-items:center;flex-shrink:0;
+    border:1px solid var(--rule);border-radius:999px;font-size:12px;color:var(--coffeeMid);
+    overflow:hidden;}
+  .chip.active{background:var(--coffee);color:var(--paper);border-color:var(--coffee);}
+  .chip .lbl{padding:5px 12px;}
+  .chip .rm{padding:5px 8px 5px 0;color:inherit;opacity:.85;}
+  .editbtn{font-size:11.5px;color:var(--taupe);padding:4px 6px;flex-shrink:0;background:none;border:0;}
+  .editbtn.on{color:var(--red);}
+  .empty{font-size:11.5px;color:var(--faint);padding:4px 0;}
+
+  .stockhead{padding:22px 22px 12px;background:var(--paperDeep);}
+  .syncbtn{width:100%;margin-top:12px;padding:11px;border-radius:8px;border:1px solid var(--coffee);
+    background:var(--coffee);color:var(--paper);font-size:14px;display:flex;align-items:center;
+    justify-content:center;gap:8px;}
+  .syncbtn.busy{opacity:.75;}
+  .syncbtn .spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(239,231,214,.4);
+    border-top-color:var(--paper);display:inline-block;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .syncnote{margin-top:8px;font-size:12px;line-height:1.6;}
+  .syncnote.ok{color:var(--green);}
+  .syncnote.err{color:var(--red);}
+  .stockhead .top{display:flex;align-items:baseline;justify-content:space-between;}
+  .stockhead .nm{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .stockhead .nm h2{font-size:23px;margin:0;color:var(--coffee);}
+  .stockhead .code{font-size:14px;color:var(--taupe);}
+  .tag{font-size:11px;padding:1px 6px;border:1px solid var(--rule);color:var(--taupe);border-radius:3px;}
+  .ind{font-size:11.5px;color:var(--taupe);margin-top:4px;}
+  .price{text-align:right;}
+  .price .num{display:flex;align-items:baseline;justify-content:flex-end;gap:3px;}
+  .price .cur{font-size:13px;opacity:.75;}
+  .price .big{font-size:28px;line-height:1;}
+  .price .chg{font-size:12px;margin-top:4px;}
+  .srcline{margin-top:12px;display:flex;align-items:center;justify-content:space-between;}
+  .src{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.03em;}
+  .dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+  .addbtn{font-size:11.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--coffee);
+    color:var(--coffee);background:transparent;display:inline-flex;align-items:center;gap:4px;}
+  .addbtn.in{border-color:var(--green);color:var(--green);}
+
+  section.sec{padding:26px 22px;border-top:1px solid var(--rule);}
+  .acc-tools{display:flex;justify-content:flex-end;gap:8px;padding:12px 22px 2px;}
+  .acc-toolbtn{font-size:12px;color:var(--coffeeMid);border:1px solid var(--rule);
+    background:transparent;border-radius:999px;padding:6px 14px;}
+  .acc-item{border-top:1px solid var(--rule);}
+  .acc-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:16px 22px;background:transparent;border:0;text-align:left;cursor:pointer;}
+  .acc-head:active{background:rgba(220,207,180,.25);}
+  .acc-title{font-size:18px;color:var(--coffee);display:flex;align-items:baseline;gap:10px;letter-spacing:.02em;}
+  .acc-title .ord{font-size:12px;font-weight:600;color:var(--gold);}
+  .acc-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .chev{font-size:13px;color:var(--taupe);transition:transform .2s ease;display:inline-block;}
+  .acc-head.open .chev{transform:rotate(180deg);}
+  .acc-body{padding:2px 22px 26px;}
+  .sec h3{display:flex;align-items:baseline;gap:10px;font-size:19px;margin:0 0 16px;
+    letter-spacing:.02em;color:var(--coffee);}
+  .sec h3 .ord{font-size:12px;font-weight:600;color:var(--gold);}
+  .sec .head{display:flex;align-items:baseline;justify-content:space-between;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .grid2x2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .tgtlist{display:flex;flex-direction:column;}
+  .tgtcalc{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .tgtcalc .tc{border:1px solid var(--rule);border-radius:6px;padding:12px;text-align:center;background:var(--paperDeep);}
+  .tgtcalc .tcl{font-size:12px;color:var(--taupe);margin-bottom:6px;}
+  .tgtcalc .tcv{font-size:22px;font-family:"Songti TC","Noto Serif TC",Georgia,serif;}
+  .tgtcalc .tcp{font-size:12px;margin-top:2px;font-family:ui-monospace,monospace;}
+  .mgtbl{display:flex;flex-direction:column;}
+  .mgth{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule);font-size:11px;color:var(--taupe);}
+  .mgr{display:flex;align-items:center;padding:9px 0;border-bottom:1px dotted var(--ruleSoft);}
+  .mgr .mgd,.mgth .mgd{width:54px;flex-shrink:0;font-size:12px;color:var(--taupe);font-family:ui-monospace,monospace;}
+  .mgr .mgv,.mgth .mgv{flex:1;text-align:right;font-size:14px;padding-right:8px;}
+  .mgth .mgv{font-size:11px;}
+  .tgr{display:flex;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px dotted var(--ruleSoft);}
+  .tgr .tgd{font-size:12px;color:var(--taupe);width:46px;flex-shrink:0;font-family:ui-monospace,monospace;}
+  .tgr .tgf{font-size:14px;color:var(--coffee);flex:1;}
+  .tgr .tgp{font-size:15px;color:var(--gold);font-weight:600;}
+  .gridm{display:grid;grid-template-columns:1fr 1fr;gap:20px 16px;}
+  .stat .v{font-size:20px;line-height:1.2;}
+  .stat .l{font-size:11.5px;margin-top:4px;color:var(--taupe);}
+  .note{font-size:11px;margin-top:8px;color:var(--faint);}
+  .msg{font-size:14px;color:var(--taupe);}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--taupe);}
+  .legend i{width:12px;height:2px;display:inline-block;}
+  .catrow{display:flex;margin-top:4px;}
+  .catrow span{flex:1;text-align:center;font-size:11px;color:var(--taupe);}
+  .ryhd{font-size:12px;color:var(--taupe);margin-bottom:8px;}
+  .revyear{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;}
+  .ry{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px dotted var(--ruleSoft);}
+  .ry .rym{font-size:12.5px;color:var(--coffeeMid);width:34px;flex-shrink:0;}
+  .ry .ryv{font-size:14px;color:var(--coffee);margin-left:auto;}
+  .rytag{font-size:9.5px;padding:1px 5px;border-radius:3px;flex-shrink:0;
+    color:var(--gold);border:1px solid var(--gold);}
+  .rytag.est{color:var(--faint);border-color:var(--faint);}
+  .instdays{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;}
+  .idr{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px dotted var(--ruleSoft);}
+  .idr .idd{font-size:12.5px;color:var(--coffeeMid);width:48px;flex-shrink:0;}
+  .idr .idv{font-size:14px;margin-left:auto;}
+  .hilo{font-size:11px;color:var(--faint);margin-top:6px;text-align:right;}
+  .pattern{margin-top:14px;padding:12px 14px;border:1px solid var(--rule);border-left-width:3px;border-radius:4px;background:var(--paperDeep);}
+  .pattern .pl{font-size:17px;font-family:"Songti TC","Noto Serif TC",Georgia,serif;}
+  .pattern .pl .plk{font-size:14px;color:var(--taupe);font-family:-apple-system,sans-serif;}
+  .pattern .pd{font-size:12px;color:var(--coffeeMid);margin-top:5px;line-height:1.6;}
+  .kbarwrap{position:relative;display:flex;border:1px solid var(--ruleSoft);border-radius:4px;
+    background:rgba(220,207,180,.18);overflow:hidden;}
+  .kbarsec{padding:14px 22px 18px;border-bottom:1px solid var(--rule);background:var(--paper);}
+  .kbarsec .legend{margin-bottom:10px;}
+  .kbar-yaxis{flex-shrink:0;width:46px;border-right:1px solid var(--ruleSoft);}
+  .kbar{flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .kbar::-webkit-scrollbar{display:none;}
+  .kbar svg{min-width:100%;}
+  .zoom{position:absolute;top:8px;right:8px;display:flex;gap:6px;}
+  .zbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--rule);
+    background:rgba(239,231,214,.92);color:var(--coffee);font-size:18px;line-height:1;
+    display:flex;align-items:center;justify-content:center;}
+  .zbtn:disabled{opacity:.35;}
+
+  .meter{display:flex;gap:4px;height:7px;}
+  .meter i{border-radius:1px;}
+  .sigrow{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px dotted var(--ruleSoft);}
+  .sigrow .sym{width:16px;flex-shrink:0;font-size:13px;}
+  .sigrow .lab{font-size:14px;color:var(--coffee);}
+  .sigrow .w{font-size:10px;color:var(--gold);margin-left:6px;}
+  .sigrow .sn{font-size:11.5px;margin-top:3px;color:var(--taupe);}
+  .verdict{margin-top:20px;font-size:18px;}
+  .concl{border:1px solid var(--rule);border-left-width:4px;border-radius:5px;padding:14px;background:var(--paperDeep);}
+  .cl-grade{font-size:20px;font-family:"Songti TC","Noto Serif TC",Georgia,serif;}
+  .cl-score{font-size:13px;color:var(--taupe);font-family:ui-monospace,monospace;}
+  .cl-strat{font-size:13.5px;color:var(--coffee);margin-top:8px;}
+  .cl-text{font-size:12.5px;color:var(--coffeeMid);margin-top:6px;line-height:1.7;}
+  .regime{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--coffeeMid);
+    margin-top:12px;padding:8px 10px;border:1px dashed var(--rule);border-radius:5px;}
+  .killbox{margin-top:12px;padding:10px 12px;border-radius:5px;font-size:13px;
+    background:rgba(168,57,43,.10);color:var(--red);border:1px solid var(--red);}
+  .ipobox{margin-top:12px;padding:10px 12px;border-radius:5px;font-size:12.5px;
+    background:rgba(156,107,46,.10);color:var(--gold);border:1px solid var(--gold);}
+  .blind{margin-top:4px;}
+  .bl{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px dotted var(--ruleSoft);font-size:12.5px;color:var(--coffeeMid);line-height:1.6;}
+  .bl .blx{flex-shrink:0;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;
+    font-size:11px;text-align:center;line-height:16px;margin-top:1px;}
+  .vpattern{margin-top:6px;font-size:16px;}
+  .vpattern .plk{font-size:13px;color:var(--taupe);}
+  .disc{margin-top:16px;padding:12px;border:1px solid var(--rule);border-radius:3px;background:var(--paperDeep);}
+  .disc p{font-size:11px;line-height:1.7;color:var(--coffeeMid);margin:0;}
+  footer{padding:24px 22px max(24px,env(safe-area-inset-bottom));font-size:11px;line-height:1.7;
+    color:var(--faint);border-top:2px solid var(--coffee);}
+  .center{text-align:center;padding:64px 22px;}
+  .center .t{font-size:17px;color:var(--coffee);}
+  .center .d{font-size:12px;margin-top:12px;line-height:1.7;color:var(--taupe);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="seal serif">茫</div>
+      <div>
+        <h1 class="serif">茫茫股海 <span style="font-size:11px;font-weight:400;color:var(--gold);letter-spacing:.04em;vertical-align:middle">Ver.2.0</span></h1>
+        <p>從營收到技術面，逐筆記下進場時機</p>
+      </div>
+      <span class="upd" id="upd" style="display:none">更新中…</span>
+    </div>
+    <form class="search" id="searchForm">
+      <div class="acwrap">
+        <div class="ibox">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A7458" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="q" type="text" autocomplete="off" placeholder="輸入代號或名稱，如 2330 或 台積電" />
+        </div>
+        <ul class="aclist" id="aclist"></ul>
+      </div>
+      <button class="btn" type="submit">查詢</button>
+    </form>
+    <div class="watchrow">
+      <button class="wbtn" id="watchBtn" data-act="togglewatchpanel">★ 自選</button>
+    </div>
+    <div class="watchpanel" id="watchpanel"></div>
+  </header>
+  <section class="idxband" id="idxband" data-act="refreshidx"></section>
+  <div class="idxnote">台指近／近全為期交所即時資料，公開代理通常無法取得，故顯示「—」。點一下指數列可重新整理。</div>
+  <div id="proxystat" style="font-size:11px;line-height:1.5;padding:8px 22px;display:none;border-bottom:1px solid var(--rule);background:var(--paperDeep);"></div>
+  <main id="main"></main>
+  <footer>
+    股價以新台幣（NT$）顯示，最新價優先取自證交所即時報價（盤中為最後成交價，收盤後為當日收盤價）；其餘資料來自證交所公開資訊。手機版透過公開代理取得資料以避開瀏覽器限制，代理偶有忙線；抓不到的欄位會以「示範資料」呈現，頁面不會卡住。本工具僅供參考，不構成投資建議。
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== 設定 ===== */
+// 代理 base：本頁若由 proxy.py 服務（http/https，含區網 IP 或通道網址）→ 用同源；
+// 直接開檔（file://）→ 退回 localhost（僅本機可用）。同源設計讓「遠端用手機連家裡電腦」可行。
+var PROXY_BASE = (location.protocol==="http:"||location.protocol==="https:") ? location.origin : "http://localhost:8787";
+// 本機/遠端代理（proxy.py）。預設不放進列表，待 checkProxy 確認存活後才插到最前面，
+// 避免代理未啟動時每個請求都先卡本機逾時 → 造成「很多東西連不上即時資料」。
+var LOCAL_PROXY = function(u){ return PROXY_BASE + "/fetch?url=" + encodeURIComponent(u); };
+var LOCAL_ALIVE = false; // checkProxy 確認 proxy.py 存活後設 true
+var PROXIES = [
+  function(u){ return "https://api.allorigins.win/raw?url=" + encodeURIComponent(u); },
+  function(u){ return "https://corsproxy.io/?url=" + encodeURIComponent(u); }
+];
+var TWSE = {
+  open: "https://openapi.twse.com.tw",
+  www:  "https://www.twse.com.tw",
+  mis:  "https://mis.twse.com.tw"
+};
+var EP = {
+  stockDayAll: TWSE.open + "/v1/exchangeReport/STOCK_DAY_ALL",
+  valuation:   TWSE.open + "/v1/exchangeReport/BWIBBU_ALL",
+  margin:      TWSE.open + "/v1/exchangeReport/MI_MARGN",
+  institutional: TWSE.open + "/v1/fund/T86",
+  companyInfo: TWSE.open + "/v1/opendata/t187ap03_L",
+  revenue:     TWSE.open + "/v1/opendata/t187ap05_L",
+  otcInfo:     "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+  otcRevenue:  "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O"
+};
+var DEFAULT_WATCH = [
+  {code:"2330",name:"台積電"},{code:"2317",name:"鴻海"},{code:"2454",name:"聯發科"},
+  {code:"2603",name:"長榮"},{code:"0050",name:"元大台灣50"}
+];
+var NAME_MAP = {}; DEFAULT_WATCH.forEach(function(f){NAME_MAP[f.code]=f.name;});
+
+// 內建常見股票／ETF 字典（離線即可用；上市清單載入後會自動擴充至全部個股）
+var STOCK_DICT = [
+ ["2330","台積電"],["2317","鴻海"],["2454","聯發科"],["2308","台達電"],["2382","廣達"],
+ ["2412","中華電"],["2303","聯電"],["3711","日月光投控"],["2891","中信金"],["2881","富邦金"],
+ ["2882","國泰金"],["2886","兆豐金"],["2884","玉山金"],["2885","元大金"],["2887","台新金"],
+ ["2890","永豐金"],["2892","第一金"],["2880","華南金"],["2883","開發金"],["2888","新光金"],
+ ["5880","合庫金"],["2801","彰銀"],["2823","中壽"],["1303","南亞"],["1301","台塑"],
+ ["1326","台化"],["6505","台塑化"],["2002","中鋼"],["2207","和泰車"],["2105","正新"],
+ ["2603","長榮"],["2609","陽明"],["2615","萬海"],["2610","華航"],["2618","長榮航"],
+ ["2353","宏碁"],["2357","華碩"],["2376","技嘉"],["2377","微星"],["2356","英業達"],
+ ["2324","仁寶"],["2301","光寶科"],["3008","大立光"],["3034","聯詠"],["3037","欣興"],
+ ["3045","台灣大"],["4904","遠傳"],["2912","統一超"],["1216","統一"],["1101","台泥"],
+ ["1102","亞泥"],["2408","南亞科"],["2474","可成"],["2327","國巨"],["2379","瑞昱"],
+ ["3231","緯創"],["2395","研華"],["2345","智邦"],["6669","緯穎"],["3661","世芯-KY"],
+ ["8046","南電"],["2368","金像電"],["3017","奇鋐"],["2360","致茂"],["2049","上銀"],
+ ["1590","亞德客-KY"],["9910","豐泰"],["9904","寶成"],["1402","遠東新"],["2344","華邦電"],
+ ["8299","群聯"],["3035","智原"],["3443","創意"],["5274","信驊"],["6415","矽力-KY"],
+ ["4966","譜瑞-KY"],["5269","祥碩"],["2383","台光電"],["6285","啟碁"],["4938","和碩"],
+ ["2347","聯強"],["3529","力旺"],["2454","聯發科"],["6446","藥華藥"],["1476","儒鴻"],
+ ["9921","巨大"],["9914","美利達"],["2308","台達電"],["2371","大同"],["2049","上銀"],
+ ["0050","元大台灣50"],["0056","元大高股息"],["006208","富邦台50"],["00878","國泰永續高股息"],
+ ["00919","群益台灣精選高息"],["00929","復華台灣科技優息"],["00940","元大台灣價值高息"],
+ ["00713","元大台灣高息低波"],["00881","國泰台灣5G+"],["00891","中信關鍵半導體"],
+ ["00850","元大臺灣ESG永續"],["00692","富邦公司治理"],["0051","元大中型100"],
+ ["00679B","元大美債20年"],["00687B","國泰20年美債"],["00757","統一FANG+"],["00646","元大S&P500"],
+ ["00631L","元大台灣50正2"],["00670L","富邦NASDAQ正2"],["00662","富邦NASDAQ"],["00830","國泰費城半導體"],
+ ["00900","富邦特選高股息30"],["00701","國泰股利精選30"],["0052","富邦科技"],["00733","富邦臺灣中小"],
+ ["00713","元大台灣高息低波"],["00927","群益半導體收益"],["00935","野村臺灣新科技50"],
+ ["6488","環球晶"],["5483","中美晶"],["8069","元太"],["3105","穩懋"],["8016","矽創"],
+ ["6510","精測"],["5347","世界"],["6182","合晶"],["3293","鈊象"],["6533","晶心科"],
+ ["6147","頎邦"],["5274","信驊"],["4966","譜瑞-KY"],["6531","愛普*"],["1565","精華"],
+ ["4128","中天"],["4174","浩鼎"],["4736","泰博"],["6446","藥華藥"],["8454","富邦媒"],
+ ["8341","日友"],["5009","榮剛"],["2727","王品"],["2729","瓦城"],["5269","祥碩"],
+ ["3260","威剛"],["3596","智易"],["4906","正文"],["3081","聯亞"],["6121","新普"],
+ ["1605","華新"],["2027","大成鋼"],["9958","世紀鋼"],["1519","華城"],["1513","中興電"],
+ ["1503","士電"],["2059","川湖"],["2542","興富發"],["2545","皇翔"],["2884","玉山金"],
+ ["3017","奇鋐"],["3653","健策"],["3324","雙鴻"]
+];
+var nameList=[];                 // [{code,name}] 可搜尋
+var nameSeen={};                 // 去重
+function addNames(pairs){
+  pairs.forEach(function(p){
+    var code=String(p.code||p[0]||"").trim(), name=String(p.name||p[1]||"").trim();
+    if(!code||!name||nameSeen[code]) return;
+    nameSeen[code]=1; nameList.push({code:code,name:name});
+    if(!NAME_MAP[code]) NAME_MAP[code]=name;
+  });
+}
+addNames(DEFAULT_WATCH); addNames(STOCK_DICT);
+function augmentNamesFrom(companyInfo,valuation){
+  var add=[];
+  if(Array.isArray(companyInfo)) companyInfo.forEach(function(r){
+    var c=field(r,["公司代號","Code"]), n=field(r,["公司簡稱","公司名稱"]); if(c&&n) add.push({code:String(c),name:String(n)});
+  });
+  if(Array.isArray(valuation)) valuation.forEach(function(r){
+    var c=field(r,["Code","證券代號"]), n=field(r,["Name","證券名稱"]); if(c&&n) add.push({code:String(c),name:String(n)});
+  });
+  if(add.length) addNames(add);
+}
+function searchNames(q){
+  q=String(q).trim().toUpperCase(); if(!q) return [];
+  var isCode=/^[0-9A-Z]+$/.test(q), res=[];
+  for(var i=0;i<nameList.length;i++){
+    var it=nameList[i], code=it.code.toUpperCase(), name=it.name.toUpperCase();
+    var rank=-1;
+    if(isCode){
+      if(code===q) rank=0; else if(code.indexOf(q)===0) rank=1; else if(name.indexOf(q)>=0) rank=4;
+    } else {
+      if(name===q) rank=0; else if(name.indexOf(q)===0) rank=2; else if(name.indexOf(q)>=0) rank=3;
+    }
+    if(rank>=0) res.push({code:it.code,name:it.name,rank:rank});
+  }
+  res.sort(function(a,b){ return a.rank-b.rank || a.code.length-b.code.length || (a.code<b.code?-1:1); });
+  return res.slice(0,8);
+}
+function resolveQuery(q){
+  q=String(q).trim().toUpperCase(); if(!q) return null;
+  if(/^[0-9A-Z]{4,6}$/.test(q)) return q;            // 直接是代號
+  var m=searchNames(q); return m.length?m[0].code:null;
+}
+
+var DEMO_INDUSTRIES = ["半導體業","電子零組件業","電腦及週邊設備業","金融保險業","航運業","塑膠工業","鋼鐵工業","食品工業","生技醫療業","通信網路業"];
+var COL = {coffee:"#4A3826",red:"#A8392B",green:"#4F6B47",gold:"#9C6B2E",paperEdge:"#DCCFB4",taupe:"#8A7458",rule:"#C9B894",faint:"#AD9B7C"};
+var MA_COL = {ma5:"#E6B800",ma10:"#7E4FA0",ma20:"#E07B1A",ma60:"#3F51B5"}; // MA5 黃、MA10 紫、MA20 橘、MA60 靛
+
+/* ===== 工具 ===== */
+function toNum(v){
+  if(v===null||v===undefined) return null;
+  if(typeof v==="number") return isNaN(v)?null:v;
+  var s=String(v).replace(/,/g,"").replace(/%/g,"").trim();
+  if(s===""||s==="--"||s==="N/A"||s==="-") return null;
+  var n=parseFloat(s); return isNaN(n)?null:n;
+}
+function field(row,cands){
+  if(!row) return null;
+  for(var i=0;i<cands.length;i++){var c=cands[i]; if(row[c]!==undefined&&row[c]!==null&&row[c]!=="") return row[c];}
+  var keys=Object.keys(row);
+  for(var j=0;j<cands.length;j++){
+    for(var k=0;k<keys.length;k++){ if(keys[k].indexOf(cands[j])>=0 && row[keys[k]]!=="" && row[keys[k]]!=null) return row[keys[k]]; }
+  }
+  return null;
+}
+function findByCode(arr,code,cands){
+  if(!Array.isArray(arr)) return null;
+  for(var i=0;i<arr.length;i++){var v=field(arr[i],cands); if(v!=null && String(v).trim().toUpperCase()===code.toUpperCase()) return arr[i];}
+  return null;
+}
+function fmtNum(n,d){ d=d||0; if(n===null||n===undefined||isNaN(n)) return "—";
+  return Number(n).toLocaleString("zh-TW",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtPct(n,d){ d=(d===undefined?1:d); if(n===null||n===undefined||isNaN(n)) return "—";
+  return (n>0?"+":"")+Number(n).toFixed(d)+"%"; }
+function shortDate(x){ var p=String(x).split("/"); return p.length===3?(p[1]+"/"+p[2]):String(x); }
+// 日增減標記：增加 +紅、減少 −綠
+function deltaTag(d,dg){
+  if(d==null) return "";
+  if(d===0) return ' <span class="dlt" style="color:#8A7458">0</span>';
+  var up=d>0;
+  return ' <span class="dlt" style="color:'+(up?"#A8392B":"#4F6B47")+'">'+(up?"+":"−")+fmtNum(Math.abs(d),dg||0)+'</span>';
+}
+function fmtYmd(s){ if(!s) return ""; var t=String(s).replace(/\//g,""); return t.length===8?(t.slice(4,6)+"/"+t.slice(6,8)):shortDate(s); }
+function monthsBack(n){ var d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-n);
+  return ""+d.getFullYear()+String(d.getMonth()+1).padStart(2,"0"); }
+function esc(s){ return String(s).replace(/[&<>]/g,function(c){return c==="&"?"&amp;":c==="<"?"&lt;":"&gt;";}); }
+
+/* ===== 取資料（經代理） ===== */
+function fetchVia(url,timeout){
+  timeout=timeout||9000;
+  var attempt=function(i){
+    if(i>=PROXIES.length) return Promise.reject(new Error("all proxies failed"));
+    var pUrl=PROXIES[i](url);
+    var to=(pUrl.indexOf(PROXY_BASE+"/fetch")===0)?4500:timeout; // 本機代理逾時短一點，掛了就快速回退公開代理
+    var ctrl=new AbortController(); var timer=setTimeout(function(){ctrl.abort();},to);
+    return fetch(pUrl,{signal:ctrl.signal}).then(function(r){
+      clearTimeout(timer); if(!r.ok) throw new Error("HTTP "+r.status); return r.text();
+    }).then(function(t){
+      try{ return JSON.parse(t); }catch(e){ throw new Error("bad json"); }
+    }).catch(function(){ clearTimeout(timer); return attempt(i+1); });
+  };
+  return attempt(0);
+}
+// FinMind 等支援跨網域的 API：先直連（較快），失敗再走代理
+function fetchDirect(url,timeout){
+  timeout=timeout||9000;
+  var ctrl=new AbortController(),timer=setTimeout(function(){ctrl.abort();},timeout);
+  return fetch(url,{signal:ctrl.signal}).then(function(r){clearTimeout(timer);if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+    .catch(function(e){clearTimeout(timer);throw e;});
+}
+function fetchAny(url,timeout){ return fetchDirect(url,timeout).catch(function(){ return fetchVia(url,timeout); }); }
+
+// FinMind：免費公開台股 API（官方歷史資料）。如常被限流，可至 finmindtrade.com 免費註冊取得 token 填入下方。
+var FINMIND_TOKEN="";
+function fmURL(dataset,code,start){
+  return "https://api.finmindtrade.com/api/v4/data?dataset="+dataset+"&data_id="+code+"&start_date="+start+(FINMIND_TOKEN?("&token="+FINMIND_TOKEN):"");
+}
+function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+// 今年各月營收（官方），回傳 [{m,value(千元),official:true}]
+function fetchMonthlyRevenue(code){
+  var year=new Date().getFullYear();
+  return fetchAny(fmURL("TaiwanStockMonthRevenue",code,(year-2)+"-01-01"),12000).then(function(j){
+    if(!j||!Array.isArray(j.data)||!j.data.length) return null;
+    var all={}; // 'YYYY-M' -> revenue(元)
+    j.data.forEach(function(r){ all[Number(r.revenue_year)+"-"+Number(r.revenue_month)]=Number(r.revenue); });
+    var yr=j.data.filter(function(r){return Number(r.revenue_year)===year;}).sort(function(a,b){return a.revenue_month-b.revenue_month;});
+    if(!yr.length) return null;
+    var list=yr.map(function(r){return {m:Number(r.revenue_month),value:Math.round(Number(r.revenue)/1000),official:true};});
+    // 近三個月 YoY（與去年同月比）
+    var yoy=[];
+    for(var i=Math.max(0,list.length-3);i<list.length;i++){
+      var mm=list[i].m, cur=all[year+"-"+mm], prev=all[(year-1)+"-"+mm];
+      if(cur!=null&&prev!=null&&prev!==0) yoy.push((cur-prev)/prev*100);
+    }
+    return {year:list, yoy:yoy};
+  }).catch(function(){return null;});
+}
+// 近 N 日三大法人合計＋外資買賣超（官方，股）
+function fetchInstDaily(code){
+  var start=new Date(); start.setDate(start.getDate()-40);
+  return fetchAny(fmURL("TaiwanStockInstitutionalInvestorsBuySell",code,ymd(start)),12000).then(function(j){
+    if(!j||!Array.isArray(j.data)||!j.data.length) return null;
+    var byDate={};
+    j.data.forEach(function(r){
+      var net=(Number(r.buy)||0)-(Number(r.sell)||0);
+      var nm=(r.name||"");
+      if(!byDate[r.date]) byDate[r.date]={net:0,foreign:0};
+      byDate[r.date].net+=net;
+      if(nm.indexOf("Foreign")>=0||nm.indexOf("外")>=0) byDate[r.date].foreign+=net;
+    });
+    var dates=Object.keys(byDate).sort();
+    if(!dates.length) return null;
+    var daily=dates.slice(-10).map(function(d){
+      var p=d.split("-");
+      return {date:(p.length===3?(Number(p[1])+"/"+Number(p[2])):d), net:byDate[d].net, foreign:byDate[d].foreign, official:true};
+    });
+    var foreign5=dates.slice(-5).reduce(function(a,d){return a+byDate[d].foreign;},0);
+    return {daily:daily, foreign5:foreign5};
+  }).catch(function(){return null;});
+}
+// 融資融券每日（FinMind），回傳近 10 日 [{date,marginBal,shortBal,ratio,official}]（舊→新）
+// 外資目標價（經本機 proxy.py 抓鉅亨/湯森路透）。未跑代理或抓不到 → 回 null 改用示範。
+function fetchInstTargets(code){
+  // 一律嘗試（不再依賴 ping 偵測時序）；抓不到/沒代理會快速失敗回 null
+  var ctrl=new AbortController(), t=setTimeout(function(){ctrl.abort();},7000);
+  return fetch(PROXY_BASE+"/targets?code="+encodeURIComponent(code),{signal:ctrl.signal})
+    .then(function(r){clearTimeout(t);if(!r.ok)throw 0;return r.json();})
+    .then(function(j){
+      if(!j||!Array.isArray(j.targets)||!j.targets.length) return null;
+      var now=Date.now();
+      return j.targets.map(function(e){return {ts:now,date:e.date,firm:e.firm,rating:e.rating,price:e.price};});
+    }).catch(function(){clearTimeout(t);return null;});
+}
+function fetchMarginDaily(code){
+  var start=new Date(); start.setDate(start.getDate()-30);
+  return fetchAny(fmURL("TaiwanStockMarginPurchaseShortSale",code,ymd(start)),12000).then(function(j){
+    if(!j||!Array.isArray(j.data)||!j.data.length) return null;
+    var rows=j.data.slice().sort(function(a,b){return a.date<b.date?-1:1;}).slice(-10);
+    return rows.map(function(r){
+      var mb=Number(r.MarginPurchaseTodayBalance), sb=Number(r.ShortSaleTodayBalance);
+      var p=String(r.date).split("-");
+      return {date:(p.length===3?(Number(p[1])+"/"+Number(p[2])):r.date),
+        marginBal:isNaN(mb)?null:mb, shortBal:isNaN(sb)?null:sb,
+        ratio:(!isNaN(mb)&&mb>0&&!isNaN(sb))?(sb/mb*100):null, official:true};
+    });
+  }).catch(function(){return null;});
+}
+// 負債比（FinMind 資產負債表，盡力取得）
+// 資產負債表指標：負債比 + 股本（億元）。股本用於自適應流動性的「中小型股」判定。
+function fetchBalanceMetrics(code){
+  var start=new Date(); start.setMonth(start.getMonth()-15);
+  return fetchAny(fmURL("TaiwanStockBalanceSheet",code,ymd(start)),12000).then(function(j){
+    if(!j||!Array.isArray(j.data)||!j.data.length) return null;
+    var latest=j.data[j.data.length-1].date, liab=null, asset=null, cap=null;
+    j.data.forEach(function(r){
+      if(r.date!==latest) return;
+      var t=r.type||"";
+      if(t==="Liabilities"||t.indexOf("TotalLiabilities")>=0||t==="負債總額"||t==="負債總計") liab=Number(r.value);
+      if(t==="TotalAssets"||t==="Assets"||t==="資產總額"||t==="資產總計") asset=Number(r.value);
+      if(t==="CommonStock"||t==="OrdinaryShare"||t.indexOf("CommonStock")>=0||t==="普通股股本"||t==="股本") cap=Number(r.value);
+    });
+    var debtRatio=(liab!=null&&asset&&asset!==0)?liab/asset*100:null;
+    var capital=(cap!=null&&!isNaN(cap)&&cap>0)?cap/1e8:null; // 億元
+    if(debtRatio==null&&capital==null) return null;
+    return {debtRatio:debtRatio, capital:capital};
+  }).catch(function(){return null;});
+}
+// 毛利率趨勢（FinMind 財報），景氣循環股的核心評分依據之一
+function fetchGrossMargin(code){
+  var start=new Date(); start.setMonth(start.getMonth()-18);
+  return fetchAny(fmURL("TaiwanStockFinancialStatements",code,ymd(start)),12000).then(function(j){
+    if(!j||!Array.isArray(j.data)||!j.data.length) return null;
+    var rev={}, gp={};
+    j.data.forEach(function(r){
+      var t=r.type||"", d=r.date, v=Number(r.value);
+      if(isNaN(v)) return;
+      if(t==="Revenue"||t==="TotalConsolidatedOperatingRevenue"||t==="OperatingRevenue"||t==="營業收入") rev[d]=v;
+      if(t==="GrossProfit"||t==="GrossProfitLoss"||t.indexOf("GrossProfit")>=0||t==="營業毛利") gp[d]=v;
+    });
+    var dates=Object.keys(rev).filter(function(d){return gp[d]!=null&&rev[d]!==0;}).sort();
+    if(dates.length<2) return null;
+    var series=dates.slice(-4).map(function(d){return {date:d, margin:gp[d]/rev[d]*100};});
+    var n=series.length, latest=series[n-1].margin, prev=series[n-2].margin, diff=latest-prev;
+    var trend=diff>0.8?"up":diff<-0.8?"down":"flat";
+    return {trend:trend, latest:latest, prev:prev, diff:diff, series:series, latestDate:dates[dates.length-1]};
+  }).catch(function(){return null;});
+}
+// 大盤（加權）日線歷史，用於市場狀態、波動與 Beta
+function fetchIndexHist(){
+  if(cache.__idxhist!==undefined) return Promise.resolve(cache.__idxhist);
+  var url="https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent("^TWII")+"?range=8mo&interval=1d";
+  return fetchAny(url,12000).then(function(j){
+    var r=j&&j.chart&&j.chart.result&&j.chart.result[0];
+    if(!r||!r.timestamp||!r.indicators){ cache.__idxhist=null; return null; }
+    var q=r.indicators.quote[0], arr=[];
+    for(var k=0;k<r.timestamp.length;k++){ var c=q.close[k]; if(c==null) continue;
+      var dd=new Date(r.timestamp[k]*1000);
+      arr.push({date:dd.getFullYear()+"/"+pad2(dd.getMonth()+1)+"/"+pad2(dd.getDate()),close:c}); }
+    cache.__idxhist=arr.length?arr:null; return cache.__idxhist;
+  }).catch(function(){cache.__idxhist=null; return null;});
+}
+// 全市場股票清單（FinMind TaiwanStockInfo：上市＋上櫃＋ETF），用於擴大中文搜尋
+function fetchAllStockInfo(){
+  if(cache.__allinfo!==undefined) return Promise.resolve(cache.__allinfo);
+  var url="https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo"+(FINMIND_TOKEN?("&token="+FINMIND_TOKEN):"");
+  return fetchAny(url,15000).then(function(j){
+    if(!j||!Array.isArray(j.data)||!j.data.length){ cache.__allinfo=null; return null; }
+    var seen={}, arr=[];
+    j.data.forEach(function(r){
+      var c=String(r.stock_id||"").trim(), n=String(r.stock_name||"").trim();
+      if(!c||!n||seen[c]) return;
+      if(!(/^\d{4}[A-Z]?$/.test(c) || /^00\d{2,3}[A-Z]?$/.test(c))) return; // 排除權證/期貨等
+      seen[c]=1; arr.push({code:c,name:n});
+    });
+    cache.__allinfo=arr.length?arr:null; return cache.__allinfo;
+  }).catch(function(){cache.__allinfo=null; return null;});
+}
+var cache={};
+function ensureAll(key,url){
+  if(cache[key]!==undefined) return Promise.resolve(cache[key]);
+  return fetchVia(url,12000).then(function(data){
+    var arr=Array.isArray(data)?data:(data&&Array.isArray(data.data)?data.data:null);
+    cache[key]=(arr&&arr.length)?arr:null; return cache[key];
+  }).catch(function(){ cache[key]=null; return null; });
+}
+function fetchMonth(code,ym){
+  var url=TWSE.www+"/rwd/zh/afterTrading/STOCK_DAY?date="+ym+"01&stockNo="+code+"&response=json";
+  return fetchVia(url,12000).then(function(json){
+    if(!json||json.stat!=="OK"||!Array.isArray(json.data)) return [];
+    return json.data.map(function(row){
+      return {date:row[0],open:toNum(row[3]),high:toNum(row[4]),low:toNum(row[5]),close:toNum(row[6])};
+    }).filter(function(r){return r.close!=null;});
+  }).catch(function(){return [];});
+}
+function fetchRealtime(code){
+  var ts=Date.now(); var chans=["tse","otc"];
+  var tryChan=function(i){
+    if(i>=chans.length) return Promise.resolve(null);
+    var url=TWSE.mis+"/stock/api/getStockInfo.jsp?ex_ch="+chans[i]+"_"+code+".tw&json=1&delay=0&_="+ts;
+    return fetchVia(url,9000).then(function(json){
+      var a=json&&json.msgArray&&json.msgArray[0];
+      if(!a) return tryChan(i+1);
+      var last=toNum(a.z), prev=toNum(a.y), bid=a.b?toNum(String(a.b).split("_")[0]):null;
+      var close=last!=null?last:(bid!=null?bid:prev);
+      if(close==null) return tryChan(i+1);
+      return {name:a.n||null,close:close,prevClose:prev,change:prev!=null?close-prev:null,
+        time:a.t||null,date:a.d||null,intraday:last!=null};
+    }).catch(function(){return tryChan(i+1);});
+  };
+  return tryChan(0);
+}
+function pad2(n){return String(n).padStart(2,"0");}
+// Yahoo 財經：對代理友善，一次取得最新價與每日 OHLC（用來畫 K 棒）
+function fetchYahoo(code){
+  var sufs=[".TW",".TWO"];
+  var trySuf=function(i){
+    if(i>=sufs.length) return Promise.resolve(null);
+    var url="https://query1.finance.yahoo.com/v8/finance/chart/"+code+sufs[i]+"?range=8mo&interval=1d";
+    return fetchVia(url,12000).then(function(j){
+      var r=j&&j.chart&&j.chart.result&&j.chart.result[0];
+      if(!r||!r.timestamp||!r.indicators||!r.indicators.quote) return trySuf(i+1);
+      var q=r.indicators.quote[0], hist=[];
+      for(var k=0;k<r.timestamp.length;k++){
+        var c=q.close[k]; if(c==null) continue;
+        var dd=new Date(r.timestamp[k]*1000);
+        hist.push({date:dd.getFullYear()+"/"+pad2(dd.getMonth()+1)+"/"+pad2(dd.getDate()),
+          open:q.open[k],high:q.high[k],low:q.low[k],close:c,volume:(q.volume?q.volume[k]:null)});
+      }
+      if(!hist.length) return trySuf(i+1);
+      var m=r.meta||{};
+      var price=m.regularMarketPrice!=null?m.regularMarketPrice:hist[hist.length-1].close;
+      var prev=m.chartPreviousClose!=null?m.chartPreviousClose:(m.previousClose!=null?m.previousClose:(hist.length>1?hist[hist.length-2].close:null));
+      var tm=m.regularMarketTime?new Date(m.regularMarketTime*1000):null;
+      var intraday=m.marketState?(m.marketState==="REGULAR"):false;
+      var rt={name:null,close:price,prevClose:prev,change:prev!=null?price-prev:null,
+        time:tm?(pad2(tm.getHours())+":"+pad2(tm.getMinutes())):null,
+        date:tm?(""+tm.getFullYear()+pad2(tm.getMonth()+1)+pad2(tm.getDate())):null,
+        intraday:intraday};
+      return {rt:rt,hist:hist};
+    }).catch(function(){return trySuf(i+1);});
+  };
+  return trySuf(0);
+}
+// 指數：加權(tse_t00)、上櫃(otc_o00) 走 MIS，Yahoo(^TWII/^TWOII) 備援；台指期盡力嘗試
+function yahooIndex(sym){
+  var url="https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(sym)+"?range=5d&interval=1d";
+  return fetchVia(url,9000).then(function(j){
+    var r=j&&j.chart&&j.chart.result&&j.chart.result[0]; if(!r) return null;
+    var m=r.meta||{}, v=m.regularMarketPrice, y=(m.chartPreviousClose!=null?m.chartPreviousClose:m.previousClose);
+    if(v==null) return null;
+    return {value:v,change:(y!=null)?v-y:null,pct:(y!=null&&y)?(v-y)/y*100:null};
+  }).catch(function(){return null;});
+}
+function fetchIndices(){
+  var out={taiex:null,otc:null,txNear:null,txNearAll:null};
+  var jobs=[];
+  jobs.push(fetchVia(TWSE.mis+"/stock/api/getStockInfo.jsp?ex_ch=tse_t00.tw|otc_o00.tw&json=1&delay=0&_="+Date.now(),9000).then(function(j){
+    var arr=(j&&j.msgArray)||[];
+    arr.forEach(function(a){
+      var v=toNum(a.z); if(v==null) v=toNum(a.o); var y=toNum(a.y);
+      var o={value:v,change:(v!=null&&y!=null)?v-y:null,pct:(v!=null&&y!=null&&y)?(v-y)/y*100:null};
+      var tag=(a.c||"")+(a.ch||"");
+      if(tag.indexOf("t00")>=0) out.taiex=out.taiex||o;
+      if(tag.indexOf("o00")>=0) out.otc=out.otc||o;
+    });
+  }).catch(function(){}));
+  jobs.push(yahooIndex("^TWII").then(function(o){ if(o&&!out.taiex) out.taiex=o; }));
+  jobs.push(yahooIndex("^TWOII").then(function(o){ if(o&&!out.otc) out.otc=o; }));
+  return Promise.all(jobs).then(function(){ return out; });
+}
+
+/* ===== 技術指標 ===== */
+function computeMA(closes,n){
+  var out=[]; for(var i=0;i<closes.length;i++){ if(i<n-1){out.push(null);continue;}
+    var s=0,ok=true; for(var j=i-n+1;j<=i;j++){ if(closes[j]==null){ok=false;break;} s+=closes[j]; }
+    out.push(ok?s/n:null);
+  } return out;
+}
+function latestRSI(closes,n){ n=n||14; if(closes.length<n+1) return null;
+  var s=closes.slice(-(n+1)),gain=0,loss=0;
+  for(var i=1;i<s.length;i++){var d=s[i]-s[i-1]; if(d>=0)gain+=d; else loss+=-d;}
+  if(gain===0&&loss===0) return 50; if(loss===0) return 100;
+  var rs=(gain/n)/(loss/n); return 100-100/(1+rs);
+}
+function latestKD(highs,lows,closes,n){ n=n||9; if(closes.length<n) return {k:null,d:null};
+  var k=50,d=50;
+  for(var i=n-1;i<closes.length;i++){
+    var hi=Math.max.apply(null,highs.slice(i-n+1,i+1)), lo=Math.min.apply(null,lows.slice(i-n+1,i+1));
+    var rsv=hi===lo?50:((closes[i]-lo)/(hi-lo))*100; k=k*(2/3)+rsv*(1/3); d=d*(2/3)+k*(1/3);
+  } return {k:k,d:d};
+}
+function industryAverage(companyInfo,valuation,industry){
+  if(!Array.isArray(companyInfo)||!Array.isArray(valuation)||!industry) return null;
+  var peer={}; companyInfo.forEach(function(r){ if(field(r,["產業別"])===industry){ peer[field(r,["公司代號","Code"])]=1; }});
+  var rows=valuation.filter(function(r){ return peer[field(r,["Code","證券代號"])]; });
+  var pes=rows.map(function(r){return toNum(field(r,["PEratio","本益比"]));}).filter(function(v){return v!=null&&v>0;});
+  var ys=rows.map(function(r){return toNum(field(r,["DividendYield","殖利率"]));}).filter(function(v){return v!=null;});
+  var avg=function(a){return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null;};
+  if(!rows.length||!pes.length) return null;
+  return {peerCount:rows.length,avgPE:avg(pes),avgYield:avg(ys)};
+}
+// 均線格局（依三條均線排列）
+// MA5＞MA10＞MA20（由上而下）→ 多方格局
+// MA20＞MA10＞MA5（由上而下）→ 空方格局
+// 其餘排列 → 格局破壞
+function maPattern(close,ma5,ma10,ma20){
+  if(ma5==null||ma10==null||ma20==null) return null;
+  if(ma5>ma10 && ma10>ma20) return {label:"多方格局",tone:"bull",desc:"MA5＞MA10＞MA20，均線多頭排列。"};
+  if(ma5<ma10 && ma10<ma20) return {label:"空方格局",tone:"bear",desc:"MA20＞MA10＞MA5，均線空頭排列。"};
+  return {label:"格局破壞",tone:"neutral",desc:"均線非多頭亦非空頭排列，格局遭破壞。"};
+}
+// 止跌訊號：連續三天 K 棒愈收愈高，且在這三天內由「均線下方」站上任一條均線（5/10/20/60 任一）
+function stopFallSignal(d){
+  if(!d||d.length<3) return false;
+  var n=d.length, x=d[n-3], y=d[n-2], z=d[n-1];
+  if(x.close==null||y.close==null||z.close==null) return false;
+  var rising = x.close<y.close && y.close<z.close;
+  if(!rising) return false;
+  var reclaimedAny=false;
+  ["ma5","ma10","ma20","ma60"].forEach(function(key){
+    if(x[key]!=null && z[key]!=null && x.close < x[key] && z.close >= z[key]) reclaimedAny=true;
+  });
+  return reclaimedAny;
+}
+// 最接近現價的均線（below=true 取下方最近者為支撐，否則取上方最近者為壓力）
+function nearestMA(t,price,below){
+  var ms=[t.ma5,t.ma10,t.ma20]; if(t.ma60!=null) ms.push(t.ma60);
+  ms=ms.filter(function(x){return x!=null;});
+  var cand=ms.filter(function(x){ return below? x<=price : x>=price; });
+  if(!cand.length) return null;
+  return below? Math.max.apply(null,cand) : Math.min.apply(null,cand);
+}
+// 區間前高／前低
+function priorHighLow(d,lookback){
+  var arr=d.slice(-lookback), hi=-Infinity, lo=Infinity;
+  arr.forEach(function(b){ if(b.high!=null)hi=Math.max(hi,b.high); if(b.low!=null)lo=Math.min(lo,b.low); });
+  return {high:isFinite(hi)?hi:null, low:isFinite(lo)?lo:null};
+}
+// 均線匯聚：MA5/10/20（有 MA60 則含）帶寬 ≤ 1.5%
+// 絕佳買點：均線是否「匯聚在同一根K棒」——均線值落在最新K棒的高低範圍內即可（不需同一點）。
+// 回傳等級：4＝MA5/10/20/60 皆在同一K棒；3＝MA5/10/20 在同一K棒；0＝未匯聚。
+function maConvergeLevel(t){
+  if(!t||!t.chartData||!t.chartData.length) return 0;
+  var last=t.chartData[t.chartData.length-1];
+  var H=last.high, L=last.low;
+  if(H==null||L==null) return 0;
+  function inBar(v){ return v!=null && v>=L && v<=H; }
+  var three=inBar(t.ma5)&&inBar(t.ma10)&&inBar(t.ma20);
+  if(!three) return 0;
+  return inBar(t.ma60)?4:3;   // 四線同棒更強
+}
+function maConverge(t){ return maConvergeLevel(t)>0; }  // 三線或四線匯聚同一K棒，任一成立即為絕佳買點
+// ATR(14)：平均真實波幅，用於波動率停損
+function atr14(d,n){
+  n=n||14; if(!d||d.length<n+1) return null;
+  var trs=[];
+  for(var i=1;i<d.length;i++){
+    var h=d[i].high,l=d[i].low,pc=d[i-1].close;
+    if(h==null||l==null||pc==null) continue;
+    trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+  }
+  if(trs.length<n) return null;
+  var s=trs.slice(-n).reduce(function(a,b){return a+b;},0);
+  return s/n;
+}
+// 技術點位評分：彙整「超漲／超跌」「區間整理位置」「絕佳買點」為單一分數（進場點位優劣）
+// 超跌／低檔整理／均線匯聚 → 點位佳(+)；超漲／高檔整理 → 追高風險(−)
+function techPointEval(t,targets,closePrice){
+  if(!t||!t.chartData||!t.chartData.length) return null;
+  var price=(closePrice!=null?closePrice:t.latestClose);
+  var cd=t.chartData, n=cd.length, hl=priorHighLow(cd,60);
+  var pricePos=(hl.high!=null&&hl.low!=null&&hl.high>hl.low)?(price-hl.low)/(hl.high-hl.low):null;
+  var bias20=(t.ma20!=null&&t.ma20!==0)?(price-t.ma20)/t.ma20*100:null;
+  var instArr=(targets||[]).map(function(x){return x.price;}).filter(function(v){return v!=null;});
+  var instAvg=instArr.length?instArr.reduce(function(a,b){return a+b;},0)/instArr.length:null;
+  // 超漲/超跌（價格區間位置＋法人均標＋月線乖離）
+  var ks=0;
+  if(pricePos!=null){ if(pricePos>0.85)ks++; else if(pricePos<0.15)ks--; }
+  if(instAvg!=null){ if(price>instAvg*1.03)ks++; else if(price<instAvg*0.97)ks--; }
+  if(bias20!=null){ if(bias20>10)ks++; else if(bias20<-10)ks--; }
+  var kLabel=ks>=1?"超漲":ks<=-1?"超跌":"正常";
+  // 區間整理位置（均線箱型）
+  var last10=cd.slice(-10);
+  var bH=Math.max.apply(null,last10.map(function(b){return b.high!=null?b.high:b.close;}));
+  var bL=Math.min.apply(null,last10.map(function(b){return b.low!=null?b.low:b.close;}));
+  var bMid=(bH+bL)/2, rangePct=bMid?(bH-bL)/bMid*100:null;
+  var ma20now=cd[n-1].ma20, ma20ago=(n>=10?cd[n-10].ma20:null);
+  var maSlope=(ma20now!=null&&ma20ago!=null&&ma20ago!==0)?(ma20now-ma20ago)/ma20ago*100:null;
+  var maFlat=maSlope!=null&&Math.abs(maSlope)<3;
+  var consolidating=(rangePct!=null&&rangePct<12)&&(maFlat||rangePct<6);
+  var pos=(hl.high!=null&&hl.low!=null&&hl.high>hl.low)?(bMid-hl.low)/(hl.high-hl.low):null;
+  var boxLabel=!consolidating?"趨勢中":(pos!=null&&pos<0.4?"低檔整理":pos!=null&&pos>0.6?"高檔整理":"橫盤整理");
+  var conv=maConverge(t);
+  // 進場點位評分
+  var sc=0, why=[];
+  if(kLabel==="超跌"){ sc+=0.5; why.push("超跌·點位便宜"); }
+  else if(kLabel==="超漲"){ sc-=0.5; why.push("超漲·追高風險"); }
+  if(boxLabel==="低檔整理"){ sc+=0.4; why.push("低檔整理"); }
+  else if(boxLabel==="高檔整理"){ sc-=0.4; why.push("高檔整理"); }
+  if(conv){ sc+=0.3; why.push("均線匯聚買點"); }
+  sc=Math.max(-1,Math.min(1,sc));
+  if(!why.length) why.push("點位中性");
+  return {score:sc,kLabel:kLabel,boxLabel:boxLabel,bias20:bias20,note:why.join("、")};
+}
+
+/* ===== 評分引擎 v2 ===== */
+var CYCLICAL=["航運業","鋼鐵工業","水泥工業","塑膠工業","紡織纖維","造紙工業","橡膠工業","玻璃陶瓷","油電燃氣業","化學工業","汽車工業"];
+var GROWTH=["生技醫療業","生技醫療","綠能環保","數位雲端","電子商務"];
+// 強制景氣循環股關鍵字（比對產業別＋個股名稱）
+var CYCLICAL_KEYWORDS=["航運","散裝","貨櫃","鋼鐵","鋼","不鏽鋼","水泥","塑膠","塑化","石化","橡膠","玻璃","造紙","面板","記憶體","DRAM","快閃","晶圓","紡織"];
+// 名稱／產業關鍵字抓不到的（面板雙虎、記憶體、成熟製程晶圓代工等）以代號強制標記
+var CYCLICAL_TICKERS={
+ "2409":"面板","3481":"面板","6116":"面板","8069":"面板",
+ "2344":"記憶體","2408":"記憶體","2337":"記憶體","5351":"記憶體","4967":"記憶體","8261":"記憶體",
+ "2303":"晶圓代工成熟製程","5347":"晶圓代工成熟製程","6770":"晶圓代工成熟製程",
+ "2002":"鋼鐵","2603":"航運","2609":"航運","2615":"航運","2606":"航運","2610":"航運",
+ "1301":"塑化","1303":"塑化","1326":"塑化","6505":"塑化","1101":"水泥","1102":"水泥"
+};
+function classifyIndustry(ind){
+  if(!ind) return "general";
+  for(var i=0;i<CYCLICAL.length;i++) if(ind.indexOf(CYCLICAL[i])>=0) return "cyclical";
+  for(var j=0;j<GROWTH.length;j++) if(ind.indexOf(GROWTH[j])>=0) return "growth";
+  return "general";
+}
+// 強制景氣循環股偵測：代號命中、或產業/名稱含關鍵字 → 自動啟動循環股評分模式
+function cyclicalAutoDetect(code,industry,name){
+  if(code && CYCLICAL_TICKERS[code]) return {hit:true,reason:CYCLICAL_TICKERS[code]};
+  var hay=String(industry||"")+" "+String(name||"");
+  for(var i=0;i<CYCLICAL_KEYWORDS.length;i++){ if(hay.indexOf(CYCLICAL_KEYWORDS[i])>=0) return {hit:true,reason:CYCLICAL_KEYWORDS[i]}; }
+  return {hit:false,reason:null};
+}
+// 由日線收盤陣列產生週線收盤（取每週最後一筆）
+function weeklyCloses(hist){
+  if(!hist||!hist.length) return [];
+  var byWk={}, order=[];
+  hist.forEach(function(h){
+    var p=String(h.date).split("/"); if(p.length<3) return;
+    var d=new Date(+p[0],+p[1]-1,+p[2]);
+    var onejan=new Date(d.getFullYear(),0,1);
+    var wk=d.getFullYear()+"-"+Math.ceil(((d-onejan)/86400000+onejan.getDay()+1)/7);
+    if(!(wk in byWk)) order.push(wk);
+    byWk[wk]=h.close;
+  });
+  return order.map(function(w){return byWk[w];});
+}
+function maOf(arr,n){ if(arr.length<n) return null; var s=0; for(var i=arr.length-n;i<arr.length;i++) s+=arr[i]; return s/n; }
+function patternOf(closes){
+  if(closes.length<20) return null;
+  return maPattern(closes[closes.length-1],maOf(closes,5),maOf(closes,10),maOf(closes,20));
+}
+// 週線 MACD（由日線聚合週收盤計算）。bull=多頭區間（非死叉下行）：柱狀體>0，或柱狀體仍負但正在收斂上行。
+function emaArr(arr,n){ if(!arr.length) return []; var k=2/(n+1), out=[arr[0]]; for(var i=1;i<arr.length;i++) out.push(arr[i]*k+out[i-1]*(1-k)); return out; }
+function weekMACDof(hist){
+  var wc=weeklyCloses(hist); if(wc.length<27) return null;
+  var e12=emaArr(wc,12), e26=emaArr(wc,26), dif=[];
+  for(var i=0;i<wc.length;i++) dif.push(e12[i]-e26[i]);
+  var dea=emaArr(dif,9), hh=[];
+  for(var j=0;j<dif.length;j++) hh.push(dif[j]-dea[j]);
+  var n=hh.length, h=hh[n-1], hp=hh[n-2];
+  var bull=(h>0)||(h>hp);
+  return {hist:h, prev:hp, dif:dif[n-1], dea:dea[n-1], bull:bull};
+}
+function betaCalc(stockHist,indexHist){
+  if(!stockHist||!indexHist||stockHist.length<30||indexHist.length<30) return null;
+  var im={}; indexHist.forEach(function(r){im[r.date]=r.close;});
+  var xs=[],ys=[];
+  for(var i=1;i<stockHist.length;i++){
+    var d=stockHist[i].date, dp=stockHist[i-1].date;
+    if(im[d]==null||im[dp]==null||stockHist[i-1].close==null) continue;
+    var rs=(stockHist[i].close-stockHist[i-1].close)/stockHist[i-1].close;
+    var ri=(im[d]-im[dp])/im[dp];
+    xs.push(ri); ys.push(rs);
+  }
+  if(xs.length<20) return null;
+  var n=xs.length, mx=xs.reduce(function(a,b){return a+b;},0)/n, my=ys.reduce(function(a,b){return a+b;},0)/n;
+  var cov=0,varx=0;
+  for(var k=0;k<n;k++){ cov+=(xs[k]-mx)*(ys[k]-my); varx+=(xs[k]-mx)*(xs[k]-mx); }
+  if(varx===0) return null;
+  return cov/varx;
+}
+function annualVol(indexHist){
+  if(!indexHist||indexHist.length<22) return null;
+  var r=[]; for(var i=indexHist.length-21;i<indexHist.length;i++){ if(indexHist[i-1]&&indexHist[i-1].close) r.push((indexHist[i].close-indexHist[i-1].close)/indexHist[i-1].close); }
+  if(r.length<10) return null;
+  var m=r.reduce(function(a,b){return a+b;},0)/r.length, v=0;
+  r.forEach(function(x){v+=(x-m)*(x-m);}); v/=r.length;
+  return Math.sqrt(v)*Math.sqrt(252)*100; // 年化波動%
+}
+function marketRegime(indexHist){
+  if(!indexHist||indexHist.length<60) return {mode:"unknown",label:"大盤資料不足",tone:"neutral",vol:null,bias60:null,overheated:false};
+  var closes=indexHist.map(function(r){return r.close;});
+  var c=closes[closes.length-1], ma20=maOf(closes,20), ma60=maOf(closes,60);
+  var vol=annualVol(indexHist);
+  var highVol=vol!=null&&vol>26;
+  var bias60=(ma60&&ma60!==0)?((c-ma60)/ma60*100):null;   // 大盤相對季線乖離率（Bias）
+  var overheated=(bias60!=null&&bias60>10);                // 季線乖離 > +10% → 高檔過熱
+  var bull=c>ma20&&ma20>ma60, bear=c<ma20&&ma20<ma60;
+  var base;
+  if(highVol&&bear) base={mode:"risk",label:"系統性風險（空頭＋高波動）",tone:"bear"};
+  else if(highVol) base={mode:"volatile",label:"高波動震盪",tone:"neutral"};
+  else if(bull) base={mode:"bull",label:"大盤多頭",tone:"bull"};
+  else if(bear) base={mode:"bear",label:"大盤空頭",tone:"bear"};
+  else base={mode:"range",label:"大盤區間震盪",tone:"neutral"};
+  base.vol=vol; base.bias60=bias60; base.overheated=overheated;
+  if(overheated&&(base.mode==="bull"||base.mode==="range")) base.label+="（季線乖離 +"+bias60.toFixed(1)+"%，高檔過熱）";
+  return base;
+}
+
+// 動態權重基準（依市場狀態調整）
+function regimeWeights(mode,overheated){
+  var w={trend:1.5,momentum:1.2,valuation:1.0,chips:1.3,liquidity:0.8,defensive:0.8,margin:0.8,techpoint:1.1};
+  if(mode==="bull"){ w.trend*=1.2; w.valuation*=1.1; w.momentum*=1.1; w.defensive*=0.6; w.techpoint*=0.9; }
+  else if(mode==="bear"||mode==="risk"){ w.trend*=0.8; w.valuation*=0.6; w.chips*=1.3; w.liquidity*=1.6; w.defensive*=1.8; w.margin*=1.2; w.techpoint*=1.2; }
+  else if(mode==="volatile"){ w.valuation*=0.8; w.defensive*=1.4; w.liquidity*=1.3; w.techpoint*=1.3; }
+  // 高檔過熱：調降技術面（趨勢）權重，避免牛市末端因均線多頭而催促追高；提高防禦與估值的相對話語權
+  if(overheated){ w.trend*=0.55; w.momentum*=0.85; w.defensive*=1.5; w.valuation*=1.2; w.techpoint*=1.2; }
+  return w;
+}
+
+function computeScore(ctx){
+  var notes=[], blind=[], factors=[];
+  var autoCyc = ctx.cyclicalAuto || ctx.industryClass==="cyclical";   // 自動/產業判定的循環股
+  var cls=((ctx.forceCyclical||autoCyc)?"cyclical":ctx.industryClass), regime=ctx.regime, mode=regime.mode;
+
+  // ===== 自適應流動性（取代固定張數一票否決）=====
+  // 中小型股（股本 < 20 億）若出現「量能異常放大」（今日量 ≥ 20 日均量 ×2），
+  // 視為主力進場的「潛力潛伏股」，解除流動性否決。
+  var smallCap = ctx.capital!=null && ctx.capital<20;     // 股本 < 20 億
+  var capUnknown = ctx.capital==null;
+  var volSurge = ctx.relVol!=null && ctx.relVol>=2;       // 今日量 ≥ 20 日均量 2 倍
+  var ambush = volSurge && (smallCap || capUnknown);      // 潛力潛伏股模式
+
+  var kill=null;
+  if(ctx.disposition) kill={reason:"列為處置／全額交割股"};
+  else if(ctx.avgVolLots!=null && ctx.avgVolLots<30 && !ambush)
+    kill={reason:"日均成交量僅約 "+fmtNum(ctx.avgVolLots)+" 張，且無量能放大，流動性嚴重不足"};
+
+  // IPO / 新股模式：歷史不足
+  var ipo=ctx.historyDays!=null && ctx.historyDays<60;
+
+  var overheated=regime.overheated;
+  var W=regimeWeights(mode,overheated);
+
+  // ===== 財報時間差打折（Data Recency Decay）=====
+  // 距上次財報 > 2 個月 → 基本面（毛利率/EPS/估值/動能）權重打 8 折，提示空窗期風險。
+  var recencyDecay = ctx.monthsSinceReport!=null && ctx.monthsSinceReport>2;
+  if(recencyDecay){ W.momentum*=0.8; W.valuation*=0.8; }
+
+  function push(key,label,score,weight,note,group){ factors.push({key:key,label:label,score:score,weight:weight,note:note,group:group}); }
+
+  // 1) 趨勢（週線定趨勢、日線找買點 — Lead-Lag Filter）
+  if(!ipo && ctx.dayPattern){
+    var dp=ctx.dayPattern, wp=ctx.weekPattern, wMACD=ctx.weekMACD;
+    var weeklyUp = wMACD ? wMACD.bull : (wp?(wp.tone==="bull"?true:wp.tone==="bear"?false:null):null);
+    var dayGolden = ctx.dayGoldenCross;
+    var ds=dp.tone==="bull"?1:dp.tone==="bear"?-1:0;
+    var ts, tnote;
+    if(weeklyUp===true && dayGolden){ ts=1; tnote="週線多頭定調＋日線黃金交叉，買點成立（提高訊號頻率）"; }
+    else if(weeklyUp===true && ds>0){ ts=0.7; tnote="週線多頭，日線同向偏多"; }
+    else if(weeklyUp===true && ds<0){ ts=0.1; tnote="週線多頭但日線回檔，待日線轉強再進"; }
+    else if(weeklyUp===false && ds>0){ ts=-0.2; tnote="週線轉弱（MACD 死叉下行），日線反彈宜偏短"; blind.push("週線 MACD 死叉下行，日線多頭恐僅是反彈，逆勢風險高"); }
+    else if(weeklyUp===false){ ts=-1; tnote="週線＋日線同步偏空"; }
+    else { ts=ds*0.6; tnote="日線"+dp.label+"（週線資料不足）"; }
+    if(overheated){ ts=Math.min(ts,0.3); tnote+="；大盤高檔過熱，技術面權重已調降"; }
+    push("trend","趨勢（週定調·日買點）",ts,W.trend,tnote,"tech");
+  } else push("trend","趨勢（週定調·日買點）",null,W.trend,ipo?"新股上市未滿 60 日，暫不計入均線":"資料不足","tech");
+
+  // 2) 基本面動能（一般股：YoY 連續遞增為佳；循環股：高 YoY＋低 PE 反為高點陷阱）
+  if(ipo){ push("momentum","營收動能（YoY 趨勢）",null,W.momentum,"新股財報期數不足","funda"); }
+  else if(cls==="cyclical" && ctx.revYoY && ctx.revYoY.length){
+    var lastYoY=ctx.revYoY[ctx.revYoY.length-1];
+    var peLow=ctx.peVsIndustry!=null && ctx.peVsIndustry<-0.2;
+    var yoyHigh=lastYoY!=null && lastYoY>30;
+    if(yoyHigh && peLow){
+      push("momentum","營收動能（循環股·反轉判讀）",-0.7,W.momentum,"YoY 達高檔（"+lastYoY.toFixed(0)+"%）且 PE 偏低，典型景氣高點陷阱，扣分","cyclical");
+      blind.push("景氣循環股高點陷阱：營收 YoY 衝高＋低本益比，往往是獲利高峰、股價將反轉");
+    } else if(lastYoY!=null && lastYoY<-10){
+      push("momentum","營收動能（循環股·反轉判讀）",0.4,W.momentum,"YoY 落底（"+lastYoY.toFixed(0)+"%），循環股谷底常為布局起點","cyclical");
+    } else {
+      push("momentum","營收動能（循環股·反轉判讀）",0,W.momentum,"循環股不以 YoY 高低單純加減分，改看 PB 與毛利率","cyclical");
+    }
+  }
+  else if(ctx.revYoY && ctx.revYoY.length>=2){
+    var arr=ctx.revYoY, rising=true, allPos=true;
+    for(var i=1;i<arr.length;i++){ if(arr[i]<arr[i-1]) rising=false; }
+    arr.forEach(function(v){ if(v<=0) allPos=false; });
+    var ms = rising&&allPos?1 : rising?0.5 : (arr[arr.length-1]<arr[0]?-0.7:0);
+    var mnote = rising&&allPos?"近"+arr.length+"月營收 YoY 連續遞增且為正，動能強":rising?"營收 YoY 遞增但部分為負":"營收 YoY 動能轉弱";
+    if(ms<=0) blind.push("營收年增動能轉弱（YoY 未連續成長），成長性存疑");
+    push("momentum","營收動能（YoY 趨勢）",ms,W.momentum,mnote,"funda");
+  } else push("momentum","營收動能（YoY 趨勢）",null,W.momentum,"營收資料不足","funda");
+
+  // 3) 估值（循環股改以 PB＋毛利率轉折為核心）
+  if(ctx.isETF){ push("valuation","估值",null,W.valuation*0.5,"ETF 不適用","funda"); }
+  else if(cls==="cyclical"){
+    var vs2=0, parts=[], hasV=false;
+    if(ctx.pb!=null){ hasV=true;
+      if(ctx.pb<1){ vs2+=0.6; parts.push("PB "+ctx.pb.toFixed(2)+"（近淨值，便宜）"); }
+      else if(ctx.pb>3){ vs2-=0.5; parts.push("PB "+ctx.pb.toFixed(2)+"（偏貴）"); }
+      else parts.push("PB "+ctx.pb.toFixed(2));
+    }
+    if(ctx.grossMargin){ hasV=true;
+      if(ctx.grossMargin.trend==="up"){ vs2+=0.4; parts.push("毛利率回升"); }
+      else if(ctx.grossMargin.trend==="down"){ vs2-=0.5; parts.push("毛利率下滑"); blind.push("循環股毛利率轉折向下，獲利動能恐已過高峰"); }
+      else parts.push("毛利率持平");
+    }
+    push("valuation","估值（循環股·PB＋毛利率）",hasV?Math.max(-1,Math.min(1,vs2)):null,W.valuation,hasV?parts.join("、"):"PB／毛利率資料不足","cyclical");
+  } else if(cls==="growth"){
+    var vs3 = ctx.peVsIndustry==null?null:(ctx.peVsIndustry<-0.1?0.4:ctx.peVsIndustry>0.5?-0.3:0.1);
+    push("valuation","估值（高成長）",vs3,W.valuation*0.5,"高成長股以成長性為主，本益比僅輔助參考","funda");
+  } else {
+    var vs = ctx.peVsIndustry==null?null:(ctx.peVsIndustry<-0.1?1:ctx.peVsIndustry>0.1?-1:0);
+    push("valuation","估值（相對同業）",vs,W.valuation,ctx.peVsIndustry==null?"資料不足":("本益比較同業"+(ctx.peVsIndustry>=0?"高":"低")+" "+Math.abs(ctx.peVsIndustry*100).toFixed(0)+"%"),"funda");
+  }
+
+  // 4) 籌碼／法人（含外資趨勢）
+  var chipScore=null, cnote="";
+  if(ctx.instNet!=null){
+    var s1=ctx.instNet>0?0.5:ctx.instNet<0?-0.5:0;
+    var s2=ctx.foreign5==null?0:(ctx.foreign5>0?0.5:ctx.foreign5<0?-0.5:0);
+    chipScore=Math.max(-1,Math.min(1,s1+s2));
+    cnote="最新法人"+(ctx.instNet>0?"買超":"賣超")+(ctx.foreign5!=null?("、近5日外資"+(ctx.foreign5>0?"淨買":"淨賣")):"");
+    if(ctx.foreign5!=null&&ctx.foreign5<0) blind.push("外資近 5 日站在賣方，上漲動能與籌碼面背離風險");
+  }
+  push("chips","籌碼／法人動向",chipScore,W.chips,cnote||"資料不足","chips");
+
+  // 5) 流動性（自適應）
+  var liqScore=null, lnote="";
+  if(ambush){
+    liqScore=0.3; lnote="量能放大 "+(ctx.relVol!=null?ctx.relVol.toFixed(1)+"×":"")+"（潛伏股，否決已解除）";
+  } else if(ctx.avgVolLots!=null){
+    liqScore = ctx.avgVolLots<300? -0.8 : ctx.avgVolLots<1000? -0.2 : ctx.avgVolLots>5000?0.3:0;
+    lnote="日均量約 "+fmtNum(ctx.avgVolLots)+" 張"+(ctx.relVol!=null?"、相對量 "+ctx.relVol.toFixed(2)+"×":"");
+    if(ctx.avgVolLots<500) blind.push("流動性偏低（日均量 "+fmtNum(ctx.avgVolLots)+" 張），大額進出滑價風險高");
+  }
+  push("liquidity","流動性（自適應）",liqScore,W.liquidity,lnote||"資料不足","chips");
+
+  // 6) 防禦因子（Beta、負債比）
+  var defScore=null, dnote=[];
+  if(ctx.beta!=null){
+    var hi=ctx.beta>1.3;
+    var penalty=(mode==="bear"||mode==="risk"||mode==="volatile")?(hi?-0.8:ctx.beta<0.8?0.4:0):(hi?-0.2:0.1);
+    defScore=(defScore||0)+penalty;
+    dnote.push("β≈"+ctx.beta.toFixed(2));
+    if(hi&&(mode==="bear"||mode==="risk"||mode==="volatile")) blind.push("高 Beta（"+ctx.beta.toFixed(2)+"）遇大盤弱勢，回檔放大風險");
+  }
+  if(ctx.debtRatio!=null){
+    var dp2=ctx.debtRatio>60?-0.5:ctx.debtRatio<35?0.2:0;
+    defScore=(defScore||0)+dp2;
+    dnote.push("負債比 "+ctx.debtRatio.toFixed(0)+"%");
+    if(ctx.debtRatio>60) blind.push("負債比偏高（"+ctx.debtRatio.toFixed(0)+"%），升息或景氣下行抗壓較弱");
+  }
+  if(defScore!=null) defScore=Math.max(-1,Math.min(1,defScore));
+  push("defensive","防禦因子（β／負債）",defScore,W.defensive,dnote.length?dnote.join("、"):"資料不足","risk");
+
+  // 7) 融資籌碼（券資比 / 融資動向）
+  var mScore=null, mnote2="";
+  if(ctx.shortMarginRatio!=null){
+    mScore=ctx.shortMarginRatio>30?-0.4:ctx.shortMarginRatio<10?0.3:0;
+    mnote2="券資比 "+ctx.shortMarginRatio.toFixed(1)+"%";
+  }
+  if(ctx.marginDelta!=null&&ctx.priceChangeSign!=null&&ctx.marginDelta>0&&ctx.priceChangeSign>0){
+    mScore=(mScore||0)-0.3; blind.push("融資追價（融資增、股價漲），散戶籌碼轉重");
+  }
+  push("margin","融資籌碼",mScore==null?null:Math.max(-1,Math.min(1,mScore)),W.margin,mnote2||"資料不足","chips");
+
+  // 技術分析（僅在出現止跌訊號時計入評分）
+  if(ctx.stopFall){
+    var taScore=0.6, taParts=["止跌訊號：有"];
+    if(ctx.converge){ taScore+=0.3; taParts.push("均線匯聚（潛在買點）"); }
+    taScore=Math.min(1,taScore);
+    push("ta","技術分析",taScore,W.trend*0.7,taParts.join("、"),"tech");
+  }
+
+  // 技術點位評分（單獨歸類：超漲跌·區間整理·買點 → 進場點位優劣）
+  if(ctx.techPoint){
+    push("techpoint","技術點位評分",ctx.techPoint.score,W.techpoint,
+      ctx.techPoint.note+"（現價 "+ctx.techPoint.kLabel+"·"+ctx.techPoint.boxLabel+"）","techpoint");
+  }
+
+  // 加權合計
+  var num=0,den=0;
+  factors.forEach(function(f){ if(f.score!=null){ num+=f.score*f.weight; den+=f.weight; } });
+  var raw=den?num/den:0;
+
+  // 等級
+  var grade;
+  if(kill) grade={label:"危險（觸發保護機制）",tone:"bear",score:raw};
+  else if(ipo) grade={label:"新股觀察",tone:"neutral",score:raw};
+  else if(raw>=0.4) grade={label:"強勢偏多",tone:"bull",score:raw};
+  else if(raw>=0.15) grade={label:"偏多",tone:"bull",score:raw};
+  else if(raw>-0.15) grade={label:"中性",tone:"neutral",score:raw};
+  else if(raw>-0.4) grade={label:"偏空",tone:"bear",score:raw};
+  else grade={label:"弱勢偏空",tone:"bear",score:raw};
+
+  // 核心結論與策略
+  var concl;
+  if(kill) concl={can:false,strategy:"不建議操作",text:"觸發保護機制（"+kill.reason+"），不論其他指標如何，列為危險級。"};
+  else if(ipo) concl={can:true,strategy:"高風險短線、嚴控部位",text:"新股上市未滿 60 日，缺乏均線與完整財報基準；僅適合高風險短線，務必嚴設停損與控制部位。"};
+  else {
+    var bullMkt=(mode==="bull");
+    if(grade.tone==="bull"&&bullMkt) concl={can:true,strategy:"波段／中長期布局",text:"個股偏多且大盤多頭，順勢可作波段，回測均線不破可續抱。"};
+    else if(grade.tone==="bull"&&!bullMkt) concl={can:true,strategy:"僅短線、嚴設停損",text:"個股偏多但大盤非多頭，屬逆勢操作，僅宜短線且嚴設停損。"};
+    else if(grade.tone==="neutral") concl={can:false,strategy:"觀望",text:"多空訊號交雜，建議觀望，等待趨勢與籌碼同步明確再進場。"};
+    else concl={can:false,strategy:"偏空／空手",text:"偏空格局，不宜做多；持有者留意停損，空手者觀望或偏空操作。"};
+    // 價值補充
+    if(cls==="general"&&grade.tone!=="bear"){
+      var valF=factors.filter(function(f){return f.key==="valuation";})[0];
+      var momF=factors.filter(function(f){return f.key==="momentum";})[0];
+      if(valF&&valF.score>0&&momF&&momF.score>0) concl.text+=" 估值具吸引力且營收動能向上，亦適合分批長期布局。";
+    }
+  }
+
+  if(grade.tone==="bull"&&(mode==="bear"||mode==="risk")) blind.push("個股偏多但大盤空頭／高風險，系統性下跌時恐難獨善其身");
+  if(overheated) blind.push("大盤季線乖離 +"+(regime.bias60!=null?regime.bias60.toFixed(1):"?")+"%，處高檔過熱區，追高風險大、宜分批或等回檔");
+  if(recencyDecay) blind.push("距上次財報已逾 "+ctx.monthsSinceReport+" 個月，基本面數據具時間滯後性，已調降基本面權重，留意財報空窗期突發風險");
+
+  if(overheated && concl.can){ concl.strategy="高檔過熱·分批不追高"; concl.text+=" 但大盤季線乖離過高、已現高檔過熱，切忌追高，建議等拉回均線再分批。"; }
+  if(ambush && !kill){ concl.text+=" 另偵測到中小型股量能異常放大（潛力潛伏股），可留意主力是否進場，但務必嚴設停損。"; }
+
+  // ===== 出場策略 / 防守價（ATR + 結構均線）=====
+  var exit=null;
+  if(ctx.price!=null){
+    var price=ctx.price, atr=ctx.atr;
+    var struct=null; // 最接近且低於現價的結構均線（月線 MA20 優先，其次季線 MA60）
+    [{n:"月線 MA20",v:ctx.ma20},{n:"季線 MA60",v:ctx.ma60}].forEach(function(m){
+      if(m.v!=null && m.v<price){ if(struct==null||m.v>struct.v) struct={n:m.n,v:m.v}; }
+    });
+    var atrStop=(atr!=null)?price-2*atr:null;       // 2×ATR 動態停損
+    var cands=[]; if(struct) cands.push(struct.v); if(atrStop!=null) cands.push(atrStop);
+    cands=cands.filter(function(x){return x<price;});
+    var defend=cands.length?Math.max.apply(null,cands):null;   // 取較貼近現價者為實戰防守價
+    var basis=(struct&&defend===struct.v)?("收盤跌破"+struct.n):(atrStop!=null&&defend===atrStop?"收盤跌破 2×ATR 動態停損":"");
+    exit={price:price, atr:atr, atrPct:(atr!=null&&price?atr/price*100:null),
+      ma20:ctx.ma20, ma60:ctx.ma60, atrStop:atrStop, struct:struct,
+      defend:defend, defendPct:(defend!=null&&price?(defend-price)/price*100:null), basis:basis};
+  }
+
+  // 盲點去重、限量
+  var seen={}, blind2=[];
+  blind.forEach(function(b){ if(!seen[b]){seen[b]=1; blind2.push(b);} });
+  if(!blind2.length) blind2.push("目前未偵測到明顯背離；仍須留意大盤系統性風險與個股突發消息。");
+
+  return {regime:regime,industryClass:cls,cyclicalActive:(cls==="cyclical"),cyclicalAuto:autoCyc,cyclicalReason:(ctx.cyclicalReason||(ctx.industryClass==="cyclical"?"產業別":null)),
+    recencyDecay:recencyDecay,monthsSinceReport:(ctx.monthsSinceReport!=null?ctx.monthsSinceReport:null),exit:exit,
+    kill:kill,ipo:ipo,overheated:overheated,ambush:ambush,factors:factors,raw:raw,grade:grade,conclusion:concl,blindspots:blind2.slice(0,5)};
+}
+
+/* ===== 示範資料（種子亂數） ===== */
+function seedFrom(str){var h=2166136261; for(var i=0;i<str.length;i++){h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0;}
+function mulberry32(a){return function(){a|=0;a=(a+0x6d2b79f5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function makeDemo(code,fallbackName){
+  var rnd=mulberry32(seedFrom(code));
+  var isETF=/^00\d{2,3}/.test(code);
+  var name=NAME_MAP[code]||fallbackName||(isETF?"示範 ETF":"示範個股");
+  var today=new Date(), price=20+Math.floor(rnd()*180), momentum=(rnd()-0.5)*0.01, hist=[];
+  for(var i=69;i>=0;i--){
+    momentum=momentum*0.9+(rnd()-0.5)*0.012; price=Math.max(5,price*(1+momentum));
+    var high=price*(1+rnd()*0.018), low=price*(1-rnd()*0.018), open=low+(high-low)*rnd();
+    var d=new Date(today); d.setDate(d.getDate()-i);
+    hist.push({date:d.getFullYear()+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0"),
+      open:open,high:high,low:low,close:price});
+  }
+  var closePrice=hist[hist.length-1].close, change=closePrice-hist[hist.length-2].close;
+  var curRevenue=Math.floor(price*1000*(0.4+rnd()*1.6));
+  var revYoY=rnd()*40-14, revMoM=rnd()*22-9;
+  var d2=new Date(); d2.setMonth(d2.getMonth()-1);
+  var pe=+(8+rnd()*28).toFixed(2), yieldPct=+(rnd()*6).toFixed(2), pb=+(0.8+rnd()*4.5).toFixed(2);
+  return {
+    name:name, isETF:isETF, industry:DEMO_INDUSTRIES[Math.floor(rnd()*DEMO_INDUSTRIES.length)],
+    closePrice:closePrice, change:change, hist:hist,
+    revYoY:revYoY, revMoM:revMoM, curRevenue:curRevenue,
+    lastYearRevenue:curRevenue/(1+revYoY/100), lastMonthRevenue:curRevenue/(1+revMoM/100),
+    yearMonth:(d2.getFullYear()-1911)+String(d2.getMonth()+1).padStart(2,"0"),
+    foreignNet:Math.floor((rnd()-0.45)*8000)*1000, trustNet:Math.floor((rnd()-0.45)*2000)*1000, dealerNet:Math.floor((rnd()-0.5)*1000)*1000,
+    marginBalance:Math.floor(5000+rnd()*45000)*1000, marginDelta:Math.floor((rnd()-0.5)*2400)*1000,
+    shortBalance:Math.floor(rnd()*3000)*1000, shortDelta:Math.floor((rnd()-0.5)*600)*1000,
+    pe:pe, yieldPct:yieldPct, pb:pb,
+    capital:+(3+rnd()*120).toFixed(1),
+    grossMargin:(function(){var base=10+rnd()*45, tr=(rnd()-0.5)*6, trend=tr>0.8?"up":tr<-0.8?"down":"flat";return {trend:trend,latest:+base.toFixed(1),prev:+(base-tr).toFixed(1),diff:+tr.toFixed(1),series:[]};})(),
+    reportDate:(function(){var d=new Date(); d.setMonth(d.getMonth()-(Math.floor(rnd()*4)+1)); d.setDate(15); return ymd(d);})(),
+    foreignHold:+(5+rnd()*70).toFixed(2), insiderHold:+(5+rnd()*35).toFixed(2), dayTrade:+(5+rnd()*40).toFixed(2),
+    yearRevenue:(function(){var now=new Date(),curM=now.getMonth()+1,arr=[];for(var mm=1;mm<=curM;mm++){arr.push({m:mm,value:Math.round(curRevenue*(0.7+rnd()*0.6)),official:false});}return arr;})(),
+    revYoY:(function(){var a=[],base=rnd()*30-10;for(var i=0;i<3;i++){base+=(rnd()-0.4)*8;a.push(+base.toFixed(1));}return a;})(),
+    analystTargets:(function(){
+      var firms=["高盛","摩根士丹利","瑞銀","美銀美林","花旗","野村","摩根大通","麥格理","元大投顧","群益投顧","凱基投顧","富邦投顧"];
+      var now=new Date(), used={}, out=[];
+      for(var i=0;i<5;i++){
+        var fi; do{ fi=Math.floor(rnd()*firms.length); }while(used[fi]); used[fi]=1;
+        var dd=new Date(now); dd.setDate(dd.getDate()-Math.floor(rnd()*30));
+        out.push({ts:dd.getTime(), date:(dd.getMonth()+1)+"/"+dd.getDate(), firm:firms[fi], price:+(closePrice*(0.9+rnd()*0.35)).toFixed(1)});
+      }
+      out.sort(function(a,b){return b.ts-a.ts;});
+      return out;
+    })(),
+    instDaily:(function(){var now=new Date(),arr=[];for(var i=9;i>=0;i--){var dd=new Date(now);dd.setDate(dd.getDate()-i);arr.push({date:(dd.getMonth()+1)+"/"+dd.getDate(),net:Math.floor((rnd()-0.45)*9000)*1000,official:false});}return arr;})(),
+    marginDaily:(function(){var now=new Date(),arr=[],mb=20000+Math.floor(rnd()*40000),sb=2000+Math.floor(rnd()*8000);for(var i=9;i>=0;i--){var dd=new Date(now);dd.setDate(dd.getDate()-i);mb+=Math.floor((rnd()-0.5)*2000);sb+=Math.floor((rnd()-0.5)*600);if(mb<1000)mb=1000;if(sb<100)sb=100;arr.push({date:(dd.getMonth()+1)+"/"+dd.getDate(),marginBal:mb,shortBal:sb,ratio:sb/mb*100,official:false});}return arr;})(),
+    indAvg:{peerCount:8+Math.floor(rnd()*28),avgPE:+(pe*(0.8+rnd()*0.5)).toFixed(2),avgYield:+(yieldPct*(0.7+rnd()*0.7)).toFixed(2)}
+  };
+}
+
+/* ===== 訊號與判讀 ===== */
+
+function buildView(code,fallbackName,rows,demo,updating){
+  var priceRow=rows.priceRow,valRow=rows.valRow,marginRow=rows.marginRow,instRow=rows.instRow,
+      infoRow=rows.infoRow,revRow=rows.revRow,liveIndAvg=rows.indAvg,liveHist=rows.hist,rt=rows.realtime;
+
+  var isETF=(!infoRow&&!revRow)?demo.isETF:false;
+  var name=field(infoRow,["公司簡稱","公司名稱"])||field(priceRow,["Name","證券名稱"])||(rt&&rt.name)||NAME_MAP[code]||fallbackName||demo.name;
+  var industry=field(infoRow,["產業別"])||demo.industry;
+
+  var priceLive=!!(rt||priceRow);
+  var priceSource=rt?"realtime":(priceRow?"daily":"demo");
+  var closePrice=rt?rt.close:(priceRow?toNum(field(priceRow,["ClosingPrice","收盤價"])):demo.closePrice);
+  var change=rt?rt.change:(priceRow?toNum(field(priceRow,["Change","漲跌價差"])):demo.change);
+  var priceTime=rt?rt.time:null, priceDate=rt?rt.date:(priceRow?field(priceRow,["Date","日期"]):null), priceIntraday=rt?rt.intraday:false;
+
+  var revLive=!!revRow;
+  var revYoY=revLive?toNum(field(revRow,["去年同月增減"])):demo.revYoY;
+  var revMoM=revLive?toNum(field(revRow,["上月比較增減"])):demo.revMoM;
+  var revenueChartData=[
+    {label:"去年同月",value:revLive?toNum(field(revRow,["去年當月營收"])):demo.lastYearRevenue},
+    {label:"上月",value:revLive?toNum(field(revRow,["上月營收"])):demo.lastMonthRevenue},
+    {label:"當月",value:revLive?toNum(field(revRow,["當月營收"])):demo.curRevenue}
+  ];
+  var yearMonth=revLive?field(revRow,["資料年月"]):demo.yearMonth;
+  var yearList, revOfficialAll=false, revYoYSeries=null;
+  if(rows.monthlyRevenue&&rows.monthlyRevenue.year&&rows.monthlyRevenue.year.length){
+    yearList=rows.monthlyRevenue.year.map(function(e){return {m:e.m,value:e.value,official:true};});
+    revOfficialAll=true; revYoYSeries=rows.monthlyRevenue.yoy||null;
+  } else {
+    yearList=demo.yearRevenue.map(function(e){return {m:e.m,value:e.value,official:false};});
+    revYoYSeries=demo.revYoY||null;
+    if(revLive){
+      var curMonthVal=toNum(field(revRow,["當月營收"])), lastMonthVal=toNum(field(revRow,["上月營收"]));
+      if(yearList.length>=1&&curMonthVal!=null){ yearList[yearList.length-1].value=curMonthVal; yearList[yearList.length-1].official=true; }
+      if(yearList.length>=2&&lastMonthVal!=null){ yearList[yearList.length-2].value=lastMonthVal; yearList[yearList.length-2].official=true; }
+    }
+  }
+
+  var instLive=!!instRow;
+  var foreignNet=instLive?toNum(field(instRow,["外資及陸資買賣超股數","外資買賣超股數"])):demo.foreignNet;
+  var trustNet=instLive?toNum(field(instRow,["投信買賣超股數"])):demo.trustNet;
+  var dealerNet=instLive?toNum(field(instRow,["自營商買賣超股數合計","自營商買賣超股數"])):demo.dealerNet;
+  var totalNet=(foreignNet||0)+(trustNet||0)+(dealerNet||0);
+  var instChartData=[{label:"外資",value:foreignNet||0},{label:"投信",value:trustNet||0},{label:"自營商",value:dealerNet||0}];
+  var instDaily, instOfficialAll=false, foreign5=null;
+  if(rows.instDailyLive&&rows.instDailyLive.daily&&rows.instDailyLive.daily.length){
+    instDaily=rows.instDailyLive.daily.map(function(e){return {date:e.date,net:e.net,official:true};});
+    instOfficialAll=true; foreign5=rows.instDailyLive.foreign5;
+  } else {
+    instDaily=demo.instDaily.map(function(e){return {date:e.date,net:e.net,official:false};});
+    if(instLive&&instDaily.length){ instDaily[instDaily.length-1].net=totalNet; instDaily[instDaily.length-1].official=true; }
+  }
+
+  var marginLive=!!marginRow;
+  var marginBalance=marginLive?toNum(field(marginRow,["融資今日餘額","融資餘額"])):demo.marginBalance;
+  var marginPrev=marginLive?toNum(field(marginRow,["融資前日餘額"])):null;
+  var marginDelta=marginLive?((marginBalance!=null&&marginPrev!=null)?marginBalance-marginPrev:null):demo.marginDelta;
+  var shortBalance=marginLive?toNum(field(marginRow,["融券今日餘額","融券餘額"])):demo.shortBalance;
+  var shortPrev=marginLive?toNum(field(marginRow,["融券前日餘額"])):null;
+  var shortDelta=marginLive?((shortBalance!=null&&shortPrev!=null)?shortBalance-shortPrev:null):demo.shortDelta;
+
+  var valLive=!!valRow;
+  var pe=valLive?toNum(field(valRow,["PEratio","本益比"])):demo.pe;
+  var yieldPct=valLive?toNum(field(valRow,["DividendYield","殖利率"])):demo.yieldPct;
+  var pb=valLive?toNum(field(valRow,["PBratio","股價淨值比"])):demo.pb;
+
+  // 融資融券近 10 日（FinMind，舊→新）；無則示範
+  var marginDailyLive=(rows.marginDailyLive&&rows.marginDailyLive.length)?rows.marginDailyLive:null;
+  var marginDaily=marginDailyLive
+    ? marginDailyLive.map(function(e){return {date:e.date,marginBal:e.marginBal,shortBal:e.shortBal,ratio:e.ratio,official:true};})
+    : demo.marginDaily.map(function(e){return {date:e.date,marginBal:e.marginBal,shortBal:e.shortBal,ratio:e.ratio,official:false};});
+  var marginOfficialAll=!!marginDailyLive;
+  var latestMD=marginDaily[marginDaily.length-1];
+
+  // 籌碼面：券資比取自最新一日（融券餘額÷融資餘額）
+  var shortMarginRatio=(latestMD&&latestMD.ratio!=null)?latestMD.ratio:((marginBalance&&marginBalance>0&&shortBalance!=null)?(shortBalance/marginBalance*100):null);
+  var chips={live:marginOfficialAll||marginLive, officialAll:marginOfficialAll, shortMarginRatio:shortMarginRatio, daily:marginDaily,
+    foreignHold:demo.foreignHold, insiderHold:demo.insiderHold, dayTrade:demo.dayTrade};
+
+  var indAvg=liveIndAvg||demo.indAvg, indLive=!!liveIndAvg;
+  var peVsIndustry=(pe!=null&&indAvg&&indAvg.avgPE)?(pe-indAvg.avgPE)/indAvg.avgPE:null;
+
+  var techLive=!!(liveHist&&liveHist.length>=10);
+  var hist=techLive?liveHist:demo.hist;
+  var technical=null;
+  if(hist&&hist.length>=10){
+    var closes=hist.map(function(h){return h.close;}), highs=hist.map(function(h){return h.high;}), lows=hist.map(function(h){return h.low;});
+    var ma5=computeMA(closes,5),ma10=computeMA(closes,10),ma20=computeMA(closes,20),ma60=computeMA(closes,60);
+    technical={
+      chartData:hist.map(function(h,i){return {date:shortDate(h.date),open:h.open,high:h.high,low:h.low,close:h.close,ma5:ma5[i],ma10:ma10[i],ma20:ma20[i],ma60:ma60[i]};}).slice(-120),
+      latestClose:closes[closes.length-1],ma5:ma5[ma5.length-1],ma10:ma10[ma10.length-1],ma20:ma20[ma20.length-1],ma60:ma60[ma60.length-1]
+    };
+    technical.pattern=maPattern(technical.latestClose,technical.ma5,technical.ma10,technical.ma20);
+    technical.goldenCross=(function(){var n2=closes.length,g=false;for(var gi=Math.max(1,n2-3);gi<n2;gi++){if(ma5[gi-1]!=null&&ma10[gi-1]!=null&&ma5[gi]!=null&&ma10[gi]!=null&&ma5[gi-1]<=ma10[gi-1]&&ma5[gi]>ma10[gi])g=true;}return g;})();
+  }
+  var priceChangeSign=change!=null?Math.sign(change):(technical&&technical.chartData.length>=2?Math.sign(technical.latestClose-technical.chartData[technical.chartData.length-2].close):null);
+
+  // ===== 建倉綜合評分引擎 v2 =====
+  var indexHist=rows.indexHist||null;
+  var instTargets=(rows.instTargets&&rows.instTargets.length)?rows.instTargets:null; // 外資真實目標價（鉅亨）
+  var resolvedTargets=instTargets||demo.analystTargets;
+  var techPoint=technical?techPointEval(technical,instTargets,closePrice):null; // 只餵真實法人目標；無則僅用本工具目標＋乖離
+  var weekPattern=(hist&&hist.length>=60)?patternOf(weeklyCloses(hist)):null;
+  var weekMACD=(hist?weekMACDof(hist):null);
+  var beta=(liveHist&&indexHist)?betaCalc(liveHist,indexHist):null;
+  var avgVolLots=null;
+  if(liveHist&&liveHist.length){
+    var vs=liveHist.slice(-20).map(function(h){return h.volume;}).filter(function(x){return x!=null;});
+    if(vs.length) avgVolLots=Math.round((vs.reduce(function(a,b){return a+b;},0)/vs.length)/1000);
+  }
+  // 相對量（今日量 ÷ 前 20 日均量），用於自適應流動性偵測主力進場
+  var relVol=null;
+  if(liveHist&&liveHist.length>=21){
+    var allv=liveHist.map(function(h){return h.volume;}).filter(function(x){return x!=null;});
+    if(allv.length>=21){ var todayV=allv[allv.length-1], avg20=allv.slice(-21,-1).reduce(function(a,b){return a+b;},0)/20; if(avg20>0) relVol=todayV/avg20; }
+  }
+  var balMetrics=rows.balanceMetrics||null;
+  var capital=(balMetrics&&balMetrics.capital!=null)?balMetrics.capital:demo.capital;
+  var debtRatio=(balMetrics&&balMetrics.debtRatio!=null)?balMetrics.debtRatio:null;
+  var grossMargin=rows.grossMargin||demo.grossMargin;
+  var forceCyclical=!!cyclicalOverride[code];
+  // 財報時間差：自動依最新財報日期計算「距今幾個月」，可由使用者覆寫
+  var repDate=(grossMargin&&grossMargin.latestDate)?grossMargin.latestDate:(demo.reportDate||null);
+  var monthsSinceReport=null;
+  if(recencyOverride[code]!=null){ monthsSinceReport=recencyOverride[code]; }
+  else if(repDate){ var rd=new Date(repDate); if(!isNaN(rd.getTime())) monthsSinceReport=Math.max(0,Math.round((Date.now()-rd.getTime())/(1000*60*60*24*30.4))); }
+  // 出場策略所需：ATR 與結構均線
+  var atrVal=(technical?atr14(technical.chartData,14):null);
+  var refPrice=(closePrice!=null?closePrice:(technical?technical.latestClose:null));
+  // 強制景氣循環股偵測
+  var cycAuto=cyclicalAutoDetect(code,industry,name);
+  var ctx={
+    isETF:isETF, industryClass:classifyIndustry(industry), forceCyclical:forceCyclical,
+    cyclicalAuto:cycAuto.hit, cyclicalReason:cycAuto.reason,
+    regime:marketRegime(indexHist),
+    historyDays:(liveHist?liveHist.length:(hist?hist.length:null)),
+    dayPattern:technical?technical.pattern:null, weekPattern:weekPattern, weekMACD:weekMACD,
+    dayGoldenCross:(technical?!!technical.goldenCross:false),
+    revYoY:isETF?null:revYoYSeries,
+    peVsIndustry:isETF?null:peVsIndustry, pb:isETF?null:pb,
+    grossMargin:isETF?null:grossMargin,
+    monthsSinceReport:(isETF?null:monthsSinceReport),
+    instNet:totalNet, foreign5:foreign5,
+    avgVolLots:avgVolLots, relVol:relVol, capital:capital,
+    beta:beta, debtRatio:debtRatio,
+    atr:atrVal, price:refPrice, ma20:(technical?technical.ma20:null), ma60:(technical?technical.ma60:null),
+    shortMarginRatio:shortMarginRatio, marginDelta:marginDelta, priceChangeSign:priceChangeSign,
+    disposition:false,
+    stopFall:(technical?stopFallSignal(technical.chartData):null),
+    converge:(technical?maConverge(technical):false),
+    techPoint:techPoint
+  };
+  var score=computeScore(ctx);
+
+  // 本工具研判目標價（高/低）：以近60日高低為基準，依綜合評分微調
+  var targetCalc=null;
+  if(technical){
+    var hl60=priorHighLow(technical.chartData,60);
+    if(hl60.high!=null&&hl60.low!=null){
+      var tone=score.grade.tone, hiT, loT;
+      if(tone==="bull"){ hiT=hl60.high*1.05; loT=hl60.low; }
+      else if(tone==="bear"){ hiT=hl60.high*0.98; loT=hl60.low*0.95; }
+      else { hiT=hl60.high; loT=hl60.low; }
+      var ref=(closePrice!=null?closePrice:technical.latestClose);
+      if(ref!=null){ hiT=Math.max(hiT,ref); loT=Math.min(loT,ref); }   // 高≥現價≥低
+      targetCalc={high:hiT, low:loT, ref:ref,
+        upPct:(ref?(hiT-ref)/ref*100:null), downPct:(ref?(loT-ref)/ref*100:null)};
+    }
+  }
+
+  return {status:"ready",updating:!!updating,code:code,name:name,industry:industry,isETF:isETF,
+    closePrice:closePrice,change:change,priceLive:priceLive,priceSource:priceSource,priceTime:priceTime,priceDate:priceDate,priceIntraday:priceIntraday,
+    revenue:{live:revLive||revOfficialAll,officialAll:revOfficialAll,revYoY:revYoY,revMoM:revMoM,revenueChartData:revenueChartData,yearMonth:yearMonth,yearList:yearList},
+    institutional:{live:instLive||instOfficialAll,officialAll:instOfficialAll,totalNet:totalNet,instChartData:instChartData,daily:instDaily},
+    margin:{live:marginOfficialAll||marginLive,officialAll:marginOfficialAll,daily:marginDaily,marginBalance:marginBalance,marginDelta:marginDelta,shortBalance:shortBalance,shortDelta:shortDelta},
+    chips:chips,
+    fundamentals:{live:valLive,pe:pe,yieldPct:yieldPct,pb:pb},
+    industryInfo:{live:indLive,industry:industry,indAvg:indAvg,peVsIndustry:peVsIndustry},
+    diag:{capital:capital,relVol:relVol,grossMargin:grossMargin,debtRatio:debtRatio,forceCyclical:forceCyclical,weekMACD:weekMACD,dayGoldenCross:(technical?!!technical.goldenCross:false),
+      monthsSinceReport:monthsSinceReport,reportDate:repDate,recencyOverridden:(recencyOverride[code]!=null),atr:atrVal,ma20:(technical?technical.ma20:null),ma60:(technical?technical.ma60:null),cyclicalAuto:cycAuto.hit,cyclicalReason:cycAuto.reason},
+    technical:technical,techLive:techLive,score:score,targets:resolvedTargets,targetsLive:!!instTargets,targetCalc:targetCalc};
+}
+
+/* ===== SVG 圖 ===== */
+function svgLine(data){
+  var W=340,H=190,padT=10,padB=10,padL=4,padR=4, series=["close","ma5","ma10","ma20"];
+  var colors={close:COL.coffee,ma5:COL.red,ma10:COL.gold,ma20:COL.green};
+  var vals=[]; data.forEach(function(d){series.forEach(function(s){if(d[s]!=null)vals.push(d[s]);});});
+  if(!vals.length) return "";
+  var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals); if(min===max){min-=1;max+=1;}
+  var x=function(i){return padL+(i/(data.length-1))*(W-padL-padR);};
+  var y=function(v){return padT+(1-(v-min)/(max-min))*(H-padT-padB);};
+  var paths="";
+  series.forEach(function(s){
+    var dstr="",started=false;
+    data.forEach(function(d,i){ if(d[s]==null)return; dstr+=(started?" L":"M")+x(i).toFixed(1)+" "+y(d[s]).toFixed(1); started=true; });
+    if(dstr) paths+='<path d="'+dstr+'" fill="none" stroke="'+colors[s]+'" stroke-width="'+(s==="close"?1.8:1.1)+'" stroke-linejoin="round"/>';
+  });
+  return {svg:'<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="xMidYMid meet" style="display:block">'+paths+'</svg>',min:min,max:max};
+}
+function svgBars(items,opt){
+  var W=340,H=opt.height||150,padT=18,padB=4;
+  var vals=items.map(function(d){return d.value||0;});
+  var max=Math.max.apply(null,vals.concat([0])), min=opt.signed?Math.min.apply(null,vals.concat([0])):0;
+  if(max===min) max=min+1;
+  var n=items.length,gap=16,bw=(W-gap*(n+1))/n;
+  var y=function(v){return padT+(1-(v-min)/(max-min))*(H-padT-padB);};
+  var base=y(0),out="";
+  items.forEach(function(d,i){
+    var xx=gap+i*(bw+gap), vy=y(d.value||0), top=Math.min(vy,base), h=Math.abs(vy-base);
+    out+='<rect x="'+xx.toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(h,0.6).toFixed(1)+'" rx="2" fill="'+opt.colorFn(d,i)+'"/>';
+    out+='<text x="'+(xx+bw/2).toFixed(1)+'" y="'+(top-4).toFixed(1)+'" font-size="9.5" text-anchor="middle" fill="'+COL.taupe+'">'+opt.fmt(d.value)+'</text>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="xMidYMid meet" style="display:block">'+out+'</svg>';
+}
+// K 棒圖：cw = 每根像素寬度（縮放等級）。回傳實際寬度供捲動容器使用。
+function svgCandles(data,cw){
+  var H=232,padT=10,padB=10;
+  var maCols={ma5:MA_COL.ma5,ma10:MA_COL.ma10,ma20:MA_COL.ma20,ma60:MA_COL.ma60};
+  var lo=Infinity,hi=-Infinity;
+  data.forEach(function(d){
+    if(d.low!=null)lo=Math.min(lo,d.low); if(d.high!=null)hi=Math.max(hi,d.high);
+    ["ma5","ma10","ma20","ma60"].forEach(function(k){ if(d[k]!=null){lo=Math.min(lo,d[k]);hi=Math.max(hi,d[k]);} });
+  });
+  if(!isFinite(lo)||!isFinite(hi)) return {svg:"",width:0,lo:0,hi:0};
+  if(lo===hi){lo-=1;hi+=1;}
+  var W=Math.max(data.length*cw,cw);
+  var y=function(v){return padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);};
+  // 水平股價刻度線
+  var ticks=[],N=5,grid="";
+  for(var ti=0;ti<N;ti++){ var tv=lo+(hi-lo)*ti/(N-1); ticks.push({v:tv,y:y(tv)}); }
+  ticks.forEach(function(t){ grid+='<line x1="0" y1="'+t.y.toFixed(1)+'" x2="'+W.toFixed(0)+'" y2="'+t.y.toFixed(1)+'" stroke="#D8CAAC" stroke-width="0.5" opacity="0.7"/>'; });
+  var bodyW=Math.max(cw*0.62,1.4);
+  var candles="";
+  data.forEach(function(d,i){
+    var cx=i*cw+cw/2, up=(d.close>=d.open), col=up?COL.red:COL.green;
+    if(d.high!=null&&d.low!=null) candles+='<line x1="'+cx.toFixed(1)+'" y1="'+y(d.high).toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+y(d.low).toFixed(1)+'" stroke="'+col+'" stroke-width="'+(cw>=8?1.2:0.8)+'"/>';
+    if(d.open!=null&&d.close!=null){
+      var yo=y(d.open),yc=y(d.close),top=Math.min(yo,yc),h=Math.abs(yo-yc); if(h<1)h=1;
+      candles+='<rect x="'+(cx-bodyW/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bodyW.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="'+col+'"/>';
+    }
+  });
+  var lines="";
+  ["ma5","ma10","ma20","ma60"].forEach(function(s){
+    var dstr="",started=false;
+    data.forEach(function(d,i){ if(d[s]==null)return; var cx=i*cw+cw/2; dstr+=(started?" L":"M")+cx.toFixed(1)+" "+y(d[s]).toFixed(1); started=true; });
+    if(dstr) lines+='<path d="'+dstr+'" fill="none" stroke="'+maCols[s]+'" stroke-width="1.1" stroke-linejoin="round" opacity="0.95"/>';
+  });
+  var svg='<svg width="'+W.toFixed(0)+'" height="'+H+'" viewBox="0 0 '+W.toFixed(0)+' '+H+'" style="display:block">'+grid+candles+lines+'</svg>';
+  return {svg:svg,width:W,lo:lo,hi:hi,H:H,ticks:ticks};
+}
+// 左側固定股價刻度軸
+function svgYAxis(H,ticks,hi){
+  var W=46,dec=hi>=1000?0:2,out="";
+  ticks.forEach(function(t){
+    out+='<line x1="'+(W-4)+'" y1="'+t.y.toFixed(1)+'" x2="'+W+'" y2="'+t.y.toFixed(1)+'" stroke="#C9B894" stroke-width="0.8"/>';
+    var yy=Math.min(Math.max(t.y,9),H-3);
+    out+='<text x="'+(W-6)+'" y="'+(yy+3).toFixed(1)+'" font-size="9.5" text-anchor="end" fill="#8A7458">'+t.v.toLocaleString("zh-TW",{minimumFractionDigits:dec,maximumFractionDigits:dec})+'</text>';
+  });
+  return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block">'+out+'</svg>';
+}
+
+/* ===== 渲染 ===== */
+var dom={};
+var current={status:"idle"};
+var watch=loadWatch();
+var editing=false;
+var watchPanelOpen=false;
+var reqId=0;
+var syncing=false;        // 同步最新股價中
+var syncNote=null;        // {code,msg,ok} 同步結果提示
+var lastRowsByCode={};    // 快取最近一次的即時資料列，供同步免重抓財報籌碼
+var cyclicalOverride={};  // 使用者手動標記為景氣循環股（依代號）
+var recencyOverride={};   // 使用者覆寫「距上次財報幾個月」（依代號）
+var CW_STEPS=[3,4,5,6,8,11,15,22,30,40];   // 每根 K 棒像素寬（縮放等級）；最大約 10 根滿版（近10日）
+var candleZoom=3;                  // 預設等級（6px）
+var ACC_KEYS=["revenue","inst","targets","margin","chips","val","ind","tech","verdict"];
+var openSec={revenue:false,inst:false,targets:false,margin:false,chips:false,val:false,ind:false,tech:false,verdict:true};
+
+function loadWatch(){
+  try{ var s=localStorage.getItem("twse_watch"); if(s){var a=JSON.parse(s); if(Array.isArray(a)) return a;} }catch(e){}
+  return DEFAULT_WATCH.slice();
+}
+function saveWatch(){ try{ localStorage.setItem("twse_watch",JSON.stringify(watch)); }catch(e){} }
+
+/* ----- 指數列 ----- */
+var idxData=null;
+function idxTile(label,d,futures){
+  var val=d&&d.value!=null?fmtNum(d.value,2):"—";
+  var col=d&&d.change!=null?(d.change>0?COL.red:d.change<0?COL.green:COL.coffee):COL.taupe;
+  var chg=d&&d.change!=null?((d.change>0?"▲ ":d.change<0?"▼ ":"— ")+fmtNum(Math.abs(d.change),2)+(d.pct!=null?"（"+fmtPct(d.pct)+"）":"")):(futures?"暫無即時來源":"暫無資料");
+  return '<div class="idxtile"><div class="il">'+label+'</div>'+
+    '<div class="iv" style="color:'+col+'">'+val+'</div>'+
+    '<div class="ic" style="color:'+col+'">'+chg+'</div></div>';
+}
+function renderIndices(){
+  if(!dom.idxband) return;
+  var d=idxData||{};
+  dom.idxband.innerHTML=
+    idxTile("加權指數",d.taiex,false)+
+    idxTile("上櫃指數",d.otc,false)+
+    idxTile("台指近",d.txNear,true)+
+    idxTile("台指近全",d.txNearAll,true);
+}
+function loadIndices(){
+  if(dom.idxband && !idxData) dom.idxband.innerHTML='<div class="idxtile"><div class="il">大盤指數</div><div class="iv" style="color:'+COL.gold+'">讀取中…</div></div>';
+  return fetchIndices().then(function(out){ idxData=out; renderIndices(); }).catch(function(){ idxData={}; renderIndices(); });
+}
+
+/* ----- 自動完成 ----- */
+var acItems=[];
+function renderAC(q){
+  if(!dom.ac) return;
+  acItems=searchNames(q);
+  if(!acItems.length){ dom.ac.className="aclist"; dom.ac.innerHTML=""; return; }
+  dom.ac.innerHTML=acItems.map(function(it){
+    return '<li data-act="pick" data-code="'+it.code+'" data-name="'+esc(it.name)+'"><span class="acn">'+esc(it.name)+'</span><span class="acc">'+it.code+'</span></li>';
+  }).join("");
+  dom.ac.className="aclist show";
+}
+function hideAC(){ if(dom.ac){ dom.ac.className="aclist"; dom.ac.innerHTML=""; } }
+
+
+function statColor(tone){ return tone==="bull"?COL.red:tone==="bear"?COL.green:COL.coffee; }
+function stat(label,value,tone){
+  return '<div class="stat"><div class="v mono" style="color:'+statColor(tone)+'">'+value+'</div><div class="l">'+label+'</div></div>';
+}
+function srcBadge(live){
+  return '<span class="src" style="color:'+(live?COL.gold:COL.faint)+'"><span class="dot" style="'+(live?"background:"+COL.gold:"border:1px solid "+COL.faint)+'"></span>'+(live?"即時資料":"示範資料")+'</span>';
+}
+function secHead(ord,title,live){
+  return '<div class="head"><h3 class="serif"><span class="ord">'+ord+'</span>'+title+'</h3>'+srcBadge(live)+'</div>';
+}
+function accItem(key,title,live,body){
+  var open=!!openSec[key];
+  return '<div class="acc-item">'+
+    '<button class="acc-head'+(open?' open':'')+'" data-act="acc" data-key="'+key+'">'+
+      '<span class="acc-title serif">'+title+'</span>'+
+      '<span class="acc-right">'+srcBadge(live)+'<span class="chev">▾</span></span>'+
+    '</button>'+
+    '<div class="acc-body"'+(open?'':' style="display:none"')+'>'+body+'</div>'+
+  '</div>';
+}
+function priceSrcLabel(st){
+  if(st.priceSource==="realtime") return st.priceIntraday?("即時報價"+(st.priceTime?" · 截至 "+String(st.priceTime).slice(0,5):"")):("最新成交"+(st.priceDate?" · "+fmtYmd(st.priceDate):""));
+  if(st.priceSource==="daily") return "收盤價"+(st.priceDate?" · "+fmtYmd(st.priceDate):"");
+  return "示範資料";
+}
+
+function renderChips(){
+  if(dom.watchBtn) dom.watchBtn.className="wbtn"+(watchPanelOpen?" on":"");
+  if(!dom.watchpanel) return;
+  if(!watchPanelOpen){ dom.watchpanel.className="watchpanel"; dom.watchpanel.innerHTML=""; return; }
+  var list="";
+  if(watch.length===0) list='<span class="empty">尚無自選股，查詢個股後按「加入自選」加入</span>';
+  else watch.forEach(function(f){
+    var active=current.code===f.code;
+    list+='<span class="chip'+(active?" active":"")+'">'+
+      '<button class="lbl" data-act="load" data-code="'+f.code+'" data-name="'+esc(f.name)+'">'+esc(f.name)+" "+f.code+'</button>'+
+      (editing?'<button class="rm" data-act="remove" data-code="'+f.code+'">✕</button>':'<span style="padding-right:12px"></span>')+
+    '</span>';
+  });
+  dom.watchpanel.className="watchpanel show";
+  dom.watchpanel.innerHTML=
+    '<div class="wp-head"><span class="t">自選股（'+watch.length+'）</span>'+
+      '<button class="wp-edit'+(editing?" on":"")+'" data-act="toggleedit">'+(editing?"✓ 完成":"✎ 編輯自選")+'</button></div>'+
+    '<div class="wp-list">'+list+'</div>';
+}
+
+// 🚀 一鍵同步：重抓 Yahoo 即時價＋成交量，套回評分模型；失敗降級提示
+function syncPrice(){
+  if(syncing||!current||current.status!=="ready") return;
+  var code=current.code, name=current.name;
+  syncing=true; syncNote=null; renderMain(current);
+  fetchYahoo(code).then(function(y){
+    syncing=false;
+    if(y&&y.rt){
+      var demo=makeDemo(code,name);
+      var rows=Object.assign({},lastRowsByCode[code]||{},{realtime:y.rt,hist:y.hist});
+      syncNote={code:code,ok:true,msg:"已同步："+(y.rt.intraday?"盤中即時":"最新成交")+" NT$"+fmtNum(y.rt.close,2)+"，評分已更新。"};
+      renderMain(buildView(code,name,rows,demo,false));
+    } else {
+      syncNote={code:code,ok:false,msg:"自動抓取失敗（可能被網路或 CORS 阻擋）。已沿用現有資料，請稍後再點一次重試。"};
+      renderMain(current);
+    }
+  }).catch(function(){
+    syncing=false;
+    syncNote={code:code,ok:false,msg:"自動抓取失敗（網路阻擋或逾時）。已沿用現有資料，請稍後再試。"};
+    renderMain(current);
+  });
+}
+function renderMain(st){
+  current=st;
+  if(st.status==="notfound"){
+    dom.main.innerHTML='<div class="center"><div class="t serif">「'+esc(st.code)+'」格式不正確</div><div class="d">台股代號通常為 4 碼數字（如 2330），ETF 或部分商品為 4–6 碼。請重新輸入。</div></div>';
+    dom.upd.style.display="none"; renderChips(); return;
+  }
+  dom.upd.style.display=st.updating?"":"none";
+
+  var changeColor=st.change>0?COL.red:st.change<0?COL.green:COL.coffee;
+  var changeColorMuted=st.change>0?COL.red:st.change<0?COL.green:COL.taupe;
+  var pct=(st.change!=null&&(st.closePrice-st.change)>0)?("（"+fmtPct((st.change/(st.closePrice-st.change))*100)+"）"):"";
+  var inW=watch.some(function(w){return w.code===st.code;});
+
+  var html="";
+  /* 標頭 */
+  html+='<div class="stockhead"><div class="top">'+
+    '<div><div class="nm"><h2 class="serif">'+esc(st.name)+'</h2><span class="code mono">'+st.code+'</span>'+(st.isETF?'<span class="tag">ETF</span>':'')+'</div>'+
+    '<div class="ind">'+(st.industry||(st.isETF?"指數股票型基金":"產業別資料暫缺"))+'</div></div>'+
+    '<div class="price"><div class="num mono" style="color:'+changeColor+'"><span class="cur">NT$</span><span class="big">'+(st.closePrice!=null?fmtNum(st.closePrice,2):"—")+'</span></div>'+
+    '<div class="chg mono" style="color:'+changeColorMuted+'">'+(st.change!=null?((st.change>0?"▲ ":st.change<0?"▼ ":"— ")+fmtNum(Math.abs(st.change),2)+pct):"—")+'</div></div>'+
+    '</div><div class="srcline">'+
+    '<span class="src" style="color:'+(st.priceSource==="demo"?COL.faint:COL.gold)+'"><span class="dot" style="'+(st.priceSource==="demo"?"border:1px solid "+COL.faint:"background:"+COL.gold)+'"></span>'+priceSrcLabel(st)+'</span>'+
+    '<button class="addbtn'+(inW?" in":"")+'" data-act="togglewatch">'+(inW?"✓ 已加入自選":"＋ 加入自選")+'</button>'+
+    '</div>'+
+    '<button class="syncbtn'+(syncing?" busy":"")+'" data-act="syncprice"'+(syncing?" disabled":"")+'>'+(syncing?'<span class="spin"></span>同步中…':'🚀 自動同步最新股價')+'</button>'+
+    (syncNote&&syncNote.code===st.code?'<div class="syncnote '+(syncNote.ok?"ok":"err")+'">'+esc(syncNote.msg)+'</div>':'')+
+    '</div>';
+
+  /* K 線圖（移至標頭下方） */
+  if(st.technical){
+    html+='<div class="kbarsec"><div class="legend">'+
+      '<span><i style="background:'+COL.red+'"></i>紅K（收漲）</span>'+
+      '<span><i style="background:'+COL.green+'"></i>綠K（收跌）</span>'+
+      '<span><i style="background:'+MA_COL.ma5+'"></i>MA5</span>'+
+      '<span><i style="background:'+MA_COL.ma10+'"></i>MA10</span>'+
+      '<span><i style="background:'+MA_COL.ma20+'"></i>MA20</span>'+
+      '<span><i style="background:'+MA_COL.ma60+'"></i>MA60</span></div>';
+    var cwT=CW_STEPS[candleZoom];
+    var kT=svgCandles(st.technical.chartData,cwT);
+    html+='<div class="kbarwrap">'+
+      '<div class="kbar-yaxis">'+svgYAxis(kT.H,kT.ticks,kT.hi)+'</div>'+
+      '<div class="kbar" id="kbar">'+kT.svg+'</div>'+
+      '<div class="zoom">'+
+        '<button class="zbtn" data-act="zoomout"'+(candleZoom<=0?' disabled':'')+'>－</button>'+
+        '<button class="zbtn" data-act="zoomin"'+(candleZoom>=CW_STEPS.length-1?' disabled':'')+'>＋</button>'+
+      '</div></div>';
+    html+='<div class="hilo">區間 高 '+fmtNum(kT.hi,2)+' ／ 低 '+fmtNum(kT.lo,2)+'（NT$）· 共 '+st.technical.chartData.length+' 根，可左右滑動</div></div>';
+  }
+
+  /* ===== 手風琴工具列 ===== */
+  var allOpen=ACC_KEYS.every(function(k){return openSec[k];});
+  html+='<div class="acc-tools">'+
+    '<button class="acc-toolbtn" data-act="onlyverdict">只看建倉評分</button>'+
+    '<button class="acc-toolbtn" data-act="accall" data-v="'+(allOpen?"0":"1")+'">'+(allOpen?"全部收合":"全部展開")+'</button>'+
+    '</div>';
+
+  /* 壹 營收 */
+  var bRev="";
+  if(st.isETF){ bRev='<p class="msg">ETF 為一籃子股票組合，不適用個股月營收指標。</p>'; }
+  else{
+    bRev+='<div class="grid2" style="margin:4px 0 18px">'+
+      stat("營收年增率",fmtPct(st.revenue.revYoY),st.revenue.revYoY>0?"bull":st.revenue.revYoY<0?"bear":null)+
+      stat("營收月增率",fmtPct(st.revenue.revMoM),st.revenue.revMoM>0?"bull":st.revenue.revMoM<0?"bear":null)+'</div>';
+    bRev+='<div class="ryhd">今年各月營收（千元）</div>';
+    bRev+='<div class="revyear">'+st.revenue.yearList.slice().reverse().map(function(e){
+      return '<div class="ry"><span class="rym">'+e.m+'月</span><span class="ryv mono">'+fmtNum(e.value)+'</span>'+(e.official?'<span class="rytag">官方</span>':'<span class="rytag est">估</span>')+'</div>';
+    }).join("")+'</div>';
+    bRev+='<p class="note">單位：新台幣千元。'+(st.revenue.officialAll?'各月皆為證交所公布之正式數字。':(st.revenue.live?'標「官方」者為最新公布之當月／上月數字，其餘月份為估計值。':'目前為示範資料。'))+'</p>';
+  }
+  html+=accItem("revenue","營收表現",st.revenue.live,bRev);
+
+  /* 貳 法人 */
+  var bInst=stat("三大法人合計買賣超（股）",(st.institutional.totalNet>0?"+":"")+fmtNum(st.institutional.totalNet),st.institutional.totalNet>0?"bull":st.institutional.totalNet<0?"bear":null);
+  bInst+='<div class="ryhd" style="margin-top:16px">近 10 日合計買賣超（股）</div>';
+  bInst+='<div class="instdays">'+st.institutional.daily.slice().reverse().map(function(e){
+    var pos=e.net>0, neg=e.net<0;
+    var col=pos?COL.red:neg?COL.green:COL.taupe;
+    var sign=pos?"+":neg?"-":"";
+    return '<div class="idr"><span class="idd">'+e.date+'</span><span class="idv mono" style="color:'+col+'">'+sign+fmtNum(Math.abs(e.net))+'</span>'+(e.official?'<span class="rytag">官方</span>':'<span class="rytag est">估</span>')+'</div>';
+  }).join("")+'</div>';
+  bInst+='<p class="note">買超以 + 紅色、賣超以 − 綠色表示。'+(st.institutional.officialAll?'近 10 日皆為官方數字。':(st.institutional.live?'最新一日為官方數字，其餘為估計值。':'目前為示範資料。'))+'</p>';
+  html+=accItem("inst","法人動向",st.institutional.live,bInst);
+
+  /* 股票目標價 */
+  var bTgt="";
+  if(st.targetCalc){
+    bTgt+='<div class="ryhd">本工具研判目標價</div>';
+    bTgt+='<div class="tgtcalc">'+
+      '<div class="tc"><div class="tcl">目標價（高）</div><div class="tcv" style="color:'+COL.red+'">'+fmtNum(st.targetCalc.high,1)+'</div>'+(st.targetCalc.upPct!=null?'<div class="tcp" style="color:'+COL.red+'">'+(st.targetCalc.upPct>=0?"+":"")+fmtNum(st.targetCalc.upPct,1)+'%</div>':'')+'</div>'+
+      '<div class="tc"><div class="tcl">目標價（低）</div><div class="tcv" style="color:'+COL.green+'">'+fmtNum(st.targetCalc.low,1)+'</div>'+(st.targetCalc.downPct!=null?'<div class="tcp" style="color:'+COL.green+'">'+fmtNum(st.targetCalc.downPct,1)+'%</div>':'')+'</div>'+
+      '</div>';
+    bTgt+='<p class="note">以現價 '+fmtNum(st.targetCalc.ref,1)+' 為基準，依近 60 日高低、均線壓力／支撐與建倉綜合評分（'+st.score.grade.label+'）研判的參考區間，非投資建議。</p>';
+  }
+  if(st.targets&&st.targets.length){
+    bTgt+='<div class="ryhd" style="margin-top:16px">'+(st.targetsLive?'分析師目標價（Yahoo Finance 共識）':'前五大法人目標價（依日期，最新在上）')+'</div>';
+    bTgt+='<div class="tgtlist">'+st.targets.map(function(e){
+      return '<div class="tgr"><span class="tgd">'+e.date+'</span><span class="tgf">'+esc(e.firm)+(e.rating?'（'+esc(e.rating)+'）':'')+'：</span><span class="tgp mono">'+fmtNum(e.price,1)+'</span></div>';
+    }).join("")+'</div>';
+    bTgt+='<p class="note">'+(st.targetsLive
+      ? '資料來源：Yahoo Finance 分析師評等共識（目標均價／最高／最低、分析師家數），經本機 proxy.py 取得之即時資料。'
+      : '格式為「日期　法人：目標價」。未跑本機代理或該股無分析師覆蓋，此處為示範資料；跑 proxy.py 後有覆蓋的個股會自動換成真實分析師目標價。')+'</p>';
+  }
+  if(!st.targetCalc&&!(st.targets&&st.targets.length)) bTgt='<p class="msg">暫無目標價資料。</p>';
+  html+=accItem("targets","股票目標價",!!st.targetsLive,bTgt);
+
+  /* 參 融資融券 */
+  var bMargin="";
+  bMargin+='<div class="ryhd">近 10 日融資融券餘額（張）</div>';
+  bMargin+='<div class="mgtbl"><div class="mgth"><span class="mgd">日期</span><span class="mgv">融資餘額</span><span class="mgv">融券餘額</span></div>'+
+    st.margin.daily.map(function(e,i,a){
+      var pm=i>0?a[i-1].marginBal:null, ps=i>0?a[i-1].shortBal:null;
+      var dM=(pm!=null&&e.marginBal!=null)?e.marginBal-pm:null;
+      var dS=(ps!=null&&e.shortBal!=null)?e.shortBal-ps:null;
+      return '<div class="mgr"><span class="mgd">'+e.date+'</span>'+
+        '<span class="mgv mono" style="color:'+COL.coffee+'">'+(e.marginBal!=null?fmtNum(e.marginBal):"—")+deltaTag(dM)+'</span>'+
+        '<span class="mgv mono" style="color:'+COL.coffee+'">'+(e.shortBal!=null?fmtNum(e.shortBal):"—")+deltaTag(dS)+'</span>'+
+        (e.official?'<span class="rytag">官方</span>':'<span class="rytag est">估</span>')+'</div>';
+    }).reverse().join("")+'</div>';
+  bMargin+='<p class="note">融資餘額升、融券餘額升各代表多空雙方未平倉部位變化。'+(st.margin.officialAll?'近 10 日為 FinMind 官方數字。':'目前為示範資料。')+'</p>';
+  html+=accItem("margin","融資融券",st.margin.live,bMargin);
+
+  /* 籌碼面 */
+  var bChips="";
+  bChips+='<div class="ryhd">近 10 日券資比（％）</div>';
+  bChips+='<div class="mgtbl"><div class="mgth"><span class="mgd">日期</span><span class="mgv">券資比</span></div>'+
+    st.chips.daily.map(function(e,i,a){
+      var r=e.ratio, pr=i>0?a[i-1].ratio:null;
+      var dr=(pr!=null&&r!=null)?r-pr:null;
+      var col=r==null?COL.taupe:(r>30?COL.green:r<10?COL.red:COL.coffee);
+      return '<div class="mgr"><span class="mgd">'+e.date+'</span>'+
+        '<span class="mgv mono" style="color:'+col+'">'+(r!=null?fmtNum(r,2)+"%":"—")+deltaTag(dr,2)+'</span>'+
+        (e.official?'<span class="rytag">官方</span>':'<span class="rytag est">估</span>')+'</div>';
+    }).reverse().join("")+'</div>';
+  bChips+='<p class="note">券資比＝融券餘額÷融資餘額。比率偏高（＞30%）代表空方相對積極、軋空機會增；偏低（＜10%）代表空方保守。'+(st.chips.officialAll?'近 10 日為 FinMind 官方數字。':'目前為示範資料。')+'</p>';
+  html+=accItem("chips","籌碼面",st.chips.live,bChips);
+
+  /* 肆 基本面 */
+  var bVal="";
+  if(st.isETF){ bVal='<p class="msg">ETF 不適用本益比、股價淨值比等個股評價指標。</p>'; }
+  else{ bVal='<div class="grid3">'+
+    stat("本益比",fmtNum(st.fundamentals.pe,2))+
+    stat("殖利率",st.fundamentals.yieldPct!=null?fmtNum(st.fundamentals.yieldPct,2)+"%":"—")+
+    stat("股價淨值比",fmtNum(st.fundamentals.pb,2))+'</div>'; }
+  html+=accItem("val","基本面評價",st.fundamentals.live,bVal);
+
+  /* 伍 產業面 */
+  var bInd="";
+  if(st.isETF){ bInd='<p class="msg">ETF 為跨產業組合，不適用單一產業比較。</p>'; }
+  else{
+    bInd+='<p style="font-size:14px;margin:0 0 16px;color:'+COL.coffee+'">所屬產業：<span style="color:'+COL.gold+'">'+st.industry+'</span>，同業樣本 '+st.industryInfo.indAvg.peerCount+' 檔</p>';
+    var indItems=[{label:"本股 PE",value:st.fundamentals.pe},{label:"同業平均 PE",value:st.industryInfo.indAvg.avgPE}];
+    bInd+=svgBars(indItems,{height:140,signed:false,colorFn:function(d,i){return i===0?COL.gold:COL.paperEdge;},fmt:function(v){return fmtNum(v,1);}});
+    bInd+='<div class="catrow">'+indItems.map(function(d){return '<span>'+d.label+'</span>';}).join("")+'</div>';
+    bInd+='<p class="note">同業平均殖利率約 '+fmtNum(st.industryInfo.indAvg.avgYield,2)+'%。本益比僅供評價參考，不同子產業特性差異仍須個別判斷。</p>';
+  }
+  html+=accItem("ind","產業面比較",st.industryInfo.live,bInd);
+
+  /* 陸 技術面 */
+  var bTech="";
+  if(st.technical){
+    // ===== 股票現價：超漲／超跌（本工具目標價＋法人目標價＋乖離率 綜合判斷）=====
+    var kprice=(st.closePrice!=null?st.closePrice:st.technical.latestClose);
+    var kma20=st.technical.ma20, kma60=st.technical.ma60;
+    var bias20=(kma20!=null&&kma20!==0)?(kprice-kma20)/kma20*100:null;
+    var bias60=(kma60!=null&&kma60!==0)?(kprice-kma60)/kma60*100:null;
+    var tHigh=st.targetCalc?st.targetCalc.high:null, tLow=st.targetCalc?st.targetCalc.low:null;
+    var bandPos=(tHigh!=null&&tLow!=null&&tHigh>tLow)?(kprice-tLow)/(tHigh-tLow):null; // 0=目標下緣 1=目標上緣
+    var instArr=(st.targetsLive?(st.targets||[]):[]).map(function(t){return t.price;}).filter(function(x){return x!=null;});
+    var instAvg=instArr.length?instArr.reduce(function(a,b){return a+b;},0)/instArr.length:null;
+    var kscore=0, kwhy=[];
+    if(bandPos!=null){ if(bandPos>0.85){ kscore++; kwhy.push("已逼近本工具目標上緣 "+fmtNum(tHigh,1)); } else if(bandPos<0.15){ kscore--; kwhy.push("已逼近本工具目標下緣 "+fmtNum(tLow,1)); } }
+    if(instAvg!=null){ if(kprice>instAvg*1.03){ kscore++; kwhy.push("高於分析師目標均價 "+fmtNum(instAvg,1)); } else if(kprice<instAvg*0.97){ kscore--; kwhy.push("低於分析師目標均價 "+fmtNum(instAvg,1)); } }
+    if(bias20!=null){ if(bias20>10){ kscore++; kwhy.push("月線乖離 +"+bias20.toFixed(1)+"% 偏大"); } else if(bias20<-10){ kscore--; kwhy.push("月線乖離 "+bias20.toFixed(1)+"% 偏大"); } }
+    var klabel,kcol;
+    if(kscore>=1){ klabel="超漲"; kcol=COL.red; }
+    else if(kscore<=-1){ klabel="超跌"; kcol=COL.green; }
+    else { klabel="正常區間"; kcol=COL.gold; }
+    bTech+='<div class="pattern" style="border-color:'+kcol+'">'+
+      '<div class="pl"><span class="plk">股票現價：</span><span style="color:'+kcol+'">'+klabel+'</span></div>'+
+      '<div class="pd">'+(kwhy.length?kwhy.join("、")+"。":"股價落在"+(instAvg!=null?"本工具與法人":"本工具")+"目標價的合理區間內，無明顯超漲超跌。")+'</div>'+
+      '<div class="pd" style="font-size:10.5px;color:'+COL.faint+'">乖離率　月線(MA20) '+(bias20!=null?(bias20>0?"+":"")+bias20.toFixed(2)+"%":"—")+'　季線(MA60) '+(bias60!=null?(bias60>0?"+":"")+bias60.toFixed(2)+"%":"—")+(instAvg!=null?'　分析師均標 '+fmtNum(instAvg,1):'　依本工具研判目標價')+'</div></div>';
+
+    // ===== 區間整理：均線箱型理論（近 10 日）＋ 籌碼換手 =====
+    var cd=st.technical.chartData, cdN=cd.length, last10=cd.slice(-10);
+    var bH=Math.max.apply(null,last10.map(function(b){return b.high!=null?b.high:b.close;}));
+    var bL=Math.min.apply(null,last10.map(function(b){return b.low!=null?b.low:b.close;}));
+    var bMid=(bH+bL)/2, rangePct=bMid?(bH-bL)/bMid*100:null;
+    var ma20now=cd[cdN-1].ma20, ma20ago=(cdN>=10?cd[cdN-10].ma20:null);
+    var maSlope=(ma20now!=null&&ma20ago!=null&&ma20ago!==0)?(ma20now-ma20ago)/ma20ago*100:null;
+    var maFlat=maSlope!=null&&Math.abs(maSlope)<3;                       // MA20 近10日斜率 <3% 視為走平
+    var consolidating=(rangePct!=null&&rangePct<12)&&(maFlat||rangePct<6); // 箱型：均線走平＋價格狹幅
+    var hl60b=priorHighLow(cd,60);
+    var pos=(hl60b.high!=null&&hl60b.low!=null&&hl60b.high>hl60b.low)?(bMid-hl60b.low)/(hl60b.high-hl60b.low):null;
+    var boxLabel,boxCol,boxDesc;
+    if(!consolidating){ boxLabel="趨勢進行中（非整理）"; boxCol=COL.gold; boxDesc="近 10 日振幅 "+(rangePct!=null?rangePct.toFixed(1)+"%":"—")+"，或均線仍具斜率，尚未形成箱型整理。"; }
+    else if(pos!=null&&pos<0.4){ boxLabel="低檔整理"; boxCol=COL.red; boxDesc="均線走平、股價位於近 60 日區間偏低處（"+(pos*100).toFixed(0)+"%）狹幅整理，常為打底吸籌。"; }
+    else if(pos!=null&&pos>0.6){ boxLabel="高檔整理"; boxCol=COL.green; boxDesc="均線走平、股價位於近 60 日區間偏高處（"+(pos*100).toFixed(0)+"%）狹幅整理，留意高檔換手或出貨。"; }
+    else { boxLabel="橫盤整理"; boxCol=COL.gold; boxDesc="均線走平、股價於區間中段（"+(pos!=null?(pos*100).toFixed(0)+"%":"—")+"）橫向狹幅盤整，多空方向待表態。"; }
+    // 籌碼換手：三大法人近期買賣超方向
+    var idaily=(st.institutional&&st.institutional.daily)?st.institutional.daily:[];
+    var netSum=idaily.reduce(function(a,e){return a+(e.net||0);},0);
+    var net5=idaily.slice(-5).reduce(function(a,e){return a+(e.net||0);},0);
+    var handover=(netSum>0)||(net5>0);
+    var hLabel=handover?"換手成功":"換手失敗", hCol=handover?COL.red:COL.green;
+    var hDesc=handover
+      ? "近 10 日三大法人合計"+(netSum>0?("買超 "+fmtNum(netSum)+" 股"):("近 5 日轉買超 "+fmtNum(net5)+" 股"))+"，整理期間籌碼由散戶轉入法人，換手成功。"
+      : "近 10 日三大法人合計賣超 "+fmtNum(Math.abs(netSum))+" 股，法人未承接，換手失敗。";
+    bTech+='<div class="pattern" style="border-color:'+boxCol+'">'+
+      '<div class="pl"><span class="plk">區間整理：</span><span style="color:'+boxCol+'">'+boxLabel+'</span></div>'+
+      '<div class="pd">'+boxDesc+'　箱頂 '+fmtNum(bH,2)+'／箱底 '+fmtNum(bL,2)+'（NT$）。</div></div>';
+    bTech+='<div class="pattern" style="border-color:'+hCol+'">'+
+      '<div class="pl"><span class="plk">籌碼消息：</span><span style="color:'+hCol+'">'+hLabel+'</span></div>'+
+      '<div class="pd">'+hDesc+'</div></div>';
+
+    var p=st.technical.pattern;
+    if(p){
+      var pc=p.tone==="bull"?COL.red:p.tone==="bear"?COL.green:COL.gold;
+      bTech+='<div class="pattern" style="border-color:'+pc+'">'+
+        '<div class="pl"><span class="plk">均線格局：</span><span style="color:'+pc+'">'+p.label+'</span></div>'+
+        '<div class="pd">'+p.desc+'</div></div>';
+    }
+    // 止跌訊號（一律顯示；僅「有」時才計入評分）
+    var sf=stopFallSignal(st.technical.chartData);
+    bTech+='<div class="pattern" style="border-color:'+(sf?COL.red:COL.green)+'">'+
+      '<div class="pl"><span class="plk">止跌訊號：</span><span style="color:'+(sf?COL.red:COL.green)+'">'+(sf?"有":"無")+'</span></div>'+
+      '<div class="pd">'+(sf?"連續三天 K 棒愈收愈高，並由均線下方站上任一條均線（5／10／20／60），止跌轉強。":"尚未出現連三日收高且站上任一均線的止跌型態。")+'</div></div>';
+    // 絕佳買點（均線匯聚於同一根K棒：三線或四線任一成立。一律顯示：有→紅、無→綠）
+    var convLv=maConvergeLevel(st.technical);
+    var conv=convLv>0;
+    var lastBar=st.technical.chartData[st.technical.chartData.length-1];
+    var convDesc;
+    if(convLv===4) convDesc='MA5／MA10／MA20／MA60 四條均線全部落在最新同一根 K 棒的高低範圍內，多空轉折的強力關鍵位置。';
+    else if(convLv===3) convDesc='MA5／MA10／MA20 三條均線落在最新同一根 K 棒的高低範圍內，多空轉折的關鍵位置。';
+    else convDesc='均線尚未匯聚於同一根 K 棒（最新 K 棒未同時涵蓋 MA5／10／20）。';
+    bTech+='<div class="pattern" style="border-color:'+(conv?COL.red:COL.green)+'">'+
+      '<div class="pl"><span class="plk">絕佳買點：</span><span style="color:'+(conv?COL.red:COL.green)+'">'+(conv?(convLv===4?"有（四線同棒）":"有（三線同棒）"):"無")+'</span></div>'+
+      '<div class="pd">'+convDesc+(lastBar&&lastBar.high!=null?'　（K棒區間 '+fmtNum(lastBar.low,2)+'～'+fmtNum(lastBar.high,2)+' NT$）':'')+
+      '</div></div>';
+    // 支撐／壓力點位（以最接近現價的均線為準）
+    var hl=priorHighLow(st.technical.chartData,60);
+    var sup=nearestMA(st.technical,st.technical.latestClose,true); if(sup==null) sup=hl.low;
+    var res=nearestMA(st.technical,st.technical.latestClose,false); if(res==null) res=hl.high;
+    bTech+='<div class="pattern" style="border-color:'+COL.rule+'">'+
+      '<div class="pl"><span class="plk">支撐點位：</span><span style="color:'+COL.red+'">'+fmtNum(sup,2)+'</span></div>'+
+      '<div class="pl" style="margin-top:4px"><span class="plk">壓力點位：</span><span style="color:'+COL.green+'">'+fmtNum(res,2)+'</span></div>'+
+      '<div class="pd">取最接近現價的均線作為支撐／壓力參考。</div></div>';
+    // 前高壓力／前低支撐（近 60 日高低）
+    bTech+='<div class="pattern" style="border-color:'+COL.rule+'">'+
+      '<div class="pl"><span class="plk">前高壓力：</span><span style="color:'+COL.green+'">'+fmtNum(hl.high,2)+'</span></div>'+
+      '<div class="pl" style="margin-top:4px"><span class="plk">前低支撐：</span><span style="color:'+COL.red+'">'+fmtNum(hl.low,2)+'</span></div>'+
+      '<div class="pd">近 60 日的最高與最低價，常為波段壓力與支撐。</div></div>';
+    bTech+='<div class="grid2x2" style="margin-top:16px">'+
+      stat("MA5",fmtNum(st.technical.ma5,2))+
+      stat("MA10",fmtNum(st.technical.ma10,2))+
+      stat("MA20",fmtNum(st.technical.ma20,2))+
+      stat("MA60",fmtNum(st.technical.ma60,2))+'</div>';
+    bTech+='<p class="note">日 K 棒（紅漲綠跌）與 5／10／20／60 日移動平均線。用 ＋／－ 縮放 K 棒寬度，放大後可左右滑動看更早走勢。</p>';
+  } else bTech='<p class="msg">近期日線資料不足，暫無法計算均線與格局。</p>';
+  html+=accItem("tech","技術面分析",st.techLive,bTech);
+
+  /* 柒 進場時機 */
+  var sc=st.score, gc=sc.grade.tone==="bull"?COL.red:sc.grade.tone==="bear"?COL.green:COL.gold;
+  var dg=st.diag||{};
+  var bVer="";
+
+  /* ───── 頂端：核心總分 + 操作策略 ───── */
+  bVer+='<div class="concl" style="border-color:'+gc+'">'+
+    '<div class="cl-grade" style="color:'+gc+'">'+sc.grade.label+'　<span class="cl-score">總分 '+(sc.raw>0?"+":"")+(sc.raw*100).toFixed(0)+'</span></div>'+
+    '<div class="cl-strat">操作策略：<b>'+sc.conclusion.strategy+'</b></div>'+
+    '<div class="cl-text">'+sc.conclusion.text+'</div></div>';
+  // 風控退場建議（防守價）— 緊接在預測進場核心卡下方
+  var ex=sc.exit;
+  bVer+='<div class="ryhd" style="margin-top:16px;color:'+COL.gold+'">風控退場建議（防守價）</div>';
+  if(ex && ex.defend!=null){
+    bVer+='<div class="concl" style="border-color:'+COL.gold+'">'+
+      '<div class="cl-grade" style="color:'+COL.gold+'">實戰防守價 '+fmtNum(ex.defend,2)+(ex.defendPct!=null?'　<span class="cl-score">距現價 '+fmtNum(ex.defendPct,1)+'%</span>':'')+'</div>'+
+      '<div class="cl-strat">觸發條件：<b>'+(ex.basis||'結構／波動防守')+'</b></div>'+
+      '<div class="cl-text">現價 '+fmtNum(ex.price,2)+'；月線 MA20 '+(ex.ma20!=null?fmtNum(ex.ma20,2):'—')+'、季線 MA60 '+(ex.ma60!=null?fmtNum(ex.ma60,2):'—')+'；ATR(14) '+(ex.atr!=null?fmtNum(ex.atr,2)+(ex.atrPct!=null?'（'+fmtNum(ex.atrPct,1)+'%）':''):'—')+'，2×ATR 動態停損 '+(ex.atrStop!=null?fmtNum(ex.atrStop,2):'—')+'。<b style="color:'+COL.red+'">股價收盤跌破防守價，必須堅決減碼或停損，切勿凹單。</b></div></div>';
+  } else {
+    bVer+='<div class="msg">技術面資料不足，暫無法計算防守價。</div>';
+  }
+  var rc=sc.regime.tone==="bull"?COL.red:sc.regime.tone==="bear"?COL.green:COL.gold;
+  var clsLabel={general:"一般產業",cyclical:"景氣循環股",growth:"高成長/生技"}[sc.industryClass];
+  bVer+='<div class="regime"><span>市場狀態：<b style="color:'+rc+'">'+sc.regime.label+'</b>'+(sc.regime.vol!=null?'（年化波動 '+sc.regime.vol.toFixed(0)+'%）':'')+'</span><span>'+clsLabel+'</span></div>';
+  // 頂端警示
+  if(sc.recencyDecay) bVer+='<div class="ipobox" style="border-color:'+COL.gold+'">⏳ 因財報數據具備時間滯後性（距上次財報已逾 '+sc.monthsSinceReport+' 個月），已自動調降基本面權重 20%，請謹防空窗期風險。</div>';
+  if(sc.overheated) bVer+='<div class="killbox" style="background:rgba(168,57,43,.08)">🔥 高檔過熱：大盤季線乖離 +'+(sc.regime.bias60!=null?sc.regime.bias60.toFixed(1):"?")+'%，已自動調降技術面權重，避免牛市末端追高。</div>';
+  if(sc.ambush) bVer+='<div class="ipobox">🐯 潛力潛伏股：中小型股量能放大（今日量約 '+(dg.relVol!=null?dg.relVol.toFixed(1):"?")+'× 20 日均量），已解除流動性否決，留意主力進場並嚴設停損。</div>';
+  if(sc.kill) bVer+='<div class="killbox">⛔ 一票否決：'+sc.kill.reason+'，強制列為危險級。</div>';
+  if(sc.ipo) bVer+='<div class="ipobox">🆕 新股評估模式：上市未滿 60 日，已跳過均線與年化財報評分，僅供高風險短線參考。</div>';
+
+  /* ───── 中間：風控數據 + 動態權重 + 四大維度 ───── */
+  bVer+='<div class="ryhd" style="margin-top:18px">資料快照</div>';
+  bVer+='<div class="regime" style="border-style:solid;border-color:'+COL.rule+'">'+
+    '<span>股本 '+(dg.capital!=null?fmtNum(dg.capital,1)+' 億':'—')+'</span>'+
+    '<span>相對量 '+(dg.relVol!=null?dg.relVol.toFixed(2)+'×':'—')+'</span>'+
+    '<span>毛利率 '+(dg.grossMargin?fmtNum(dg.grossMargin.latest,1)+'%（'+({up:"↗",down:"↘",flat:"→"}[dg.grossMargin.trend])+'）':'—')+'</span>'+
+    '<span>距財報 '+(dg.monthsSinceReport!=null?dg.monthsSinceReport+' 月'+(dg.recencyOverridden?'(手動)':''):'—')+'</span>'+
+    '</div>';
+  // 財報時間差：使用者可輸入覆寫
+  bVer+='<div style="margin-top:10px;font-size:12px;color:var(--coffeeMid);display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<span>距上次財報（月）：</span>'+
+    '<input id="recencyInput" type="number" min="0" inputmode="numeric" value="'+(dg.recencyOverridden&&dg.monthsSinceReport!=null?dg.monthsSinceReport:'')+'" placeholder="自動" style="width:66px;padding:5px 8px;border:1px solid '+COL.rule+';border-radius:5px;background:var(--paperDeep);color:var(--coffee)"/>'+
+    '<span style="font-size:11px;color:'+COL.faint+'">留空＝自動依財報日期('+(dg.reportDate||'—')+')計算；＞2 月自動打折</span>'+
+    '</div>';
+  // 景氣循環股：自動偵測徽章 或 手動切換
+  if(sc.cyclicalAuto){
+    bVer+='<div style="margin-top:10px"><span class="acc-toolbtn" style="border-color:'+COL.gold+';color:'+COL.gold+'">✓ 景氣循環股（'+(dg.cyclicalAuto?'自動偵測：'+sc.cyclicalReason:'產業判定')+'）</span> <span style="font-size:11px;color:'+COL.faint+'">已強制啟動循環股反轉評分：高 PE 進場、低 PE 扣分，以 PB＋毛利轉折為主</span></div>';
+  } else {
+    bVer+='<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+      '<button class="acc-toolbtn" data-act="togglecyclical" style="'+(dg.forceCyclical?'border-color:'+COL.gold+';color:'+COL.gold:'')+'">'+(dg.forceCyclical?'✓ 已標記為景氣循環股':'標記為景氣循環股')+'</button>'+
+      '<span style="font-size:11px;color:'+COL.faint+'">點此手動切換為循環股反轉評分</span></div>';
+  }
+  // 四大維度小計
+  function dimOf(g){ return g==="cyclical"?"cyc":g==="techpoint"?"tpt":g==="tech"?"tech":g==="chips"?"chip":"fund"; } // funda 與 risk → 基本面
+  var DIMS=[{k:"fund",l:"基本面"},{k:"tech",l:"技術面"},{k:"chip",l:"籌碼面"},{k:"tpt",l:"技術點位"},{k:"cyc",l:"循環股修正"}];
+  var dimAgg={};
+  sc.factors.forEach(function(f){ if(f.score==null)return; var d=dimOf(f.group); if(!dimAgg[d])dimAgg[d]={n:0,w:0}; dimAgg[d].n+=f.score*f.weight; dimAgg[d].w+=f.weight; });
+  bVer+='<div class="ryhd" style="margin-top:18px">五大維度評分</div>';
+  bVer+='<div class="grid2x2">'+DIMS.map(function(D){
+    var a=dimAgg[D.k], val=(a&&a.w)?a.n/a.w:null;
+    var c=val==null?COL.faint:val>0.15?COL.red:val<-0.15?COL.green:COL.gold;
+    var sym=val==null?"—":val>0.15?"▲ 偏多":val<-0.15?"▼ 偏空":"中性";
+    var disp=val==null?(D.k==="cyc"?"未啟動":"—"):(val>0?"+":"")+(val*100).toFixed(0);
+    return '<div class="stat" style="border:1px solid '+COL.rule+';border-radius:7px;padding:10px 12px"><div class="v mono" style="color:'+c+'">'+disp+'</div><div class="l">'+D.l+'　<span style="color:'+c+'">'+sym+'</span></div></div>';
+  }).join("")+'</div>';
+  // 動態權重條
+  bVer+='<div class="ryhd" style="margin-top:18px">動態權重（隨市場狀態／財報時效調整）</div>';
+  bVer+='<div class="meter">'+sc.factors.map(function(f){
+    var c=f.score==null?COL.paperEdge:f.score>0.15?COL.red:f.score<-0.15?COL.green:COL.gold;
+    return '<i style="flex-grow:'+f.weight.toFixed(2)+';background:'+c+'"></i>';
+  }).join("")+'</div>';
+  bVer+='<div style="margin-top:12px">'+sc.factors.map(function(f){
+    var c=f.score==null?COL.faint:f.score>0.15?COL.red:f.score<-0.15?COL.green:COL.gold;
+    var sym=f.score==null?"·":f.score>0.15?"▲":f.score<-0.15?"▼":"—";
+    return '<div class="sigrow"><span class="sym mono" style="color:'+c+'">'+sym+'</span><div><div><span class="lab">'+f.label+'</span><span class="w">權重 '+f.weight.toFixed(1)+'</span></div><div class="sn">'+f.note+'</div></div></div>';
+  }).join("")+'</div>';
+
+  /* ───── 底端：需要注意 ───── */
+  bVer+='<div class="ryhd" style="margin-top:20px;color:'+COL.red+'">需要注意</div>';
+  bVer+='<div class="blind">'+sc.blindspots.map(function(b){return '<div class="bl"><span class="blx">!</span><span>'+b+'</span></div>';}).join("")+'</div>';
+  bVer+='<div class="disc" style="margin-top:16px"><p>五大維度＝基本面、技術面、籌碼面、循環股修正、技術點位；技術點位＝超漲跌·區間整理·均線買點；動態權重會依大盤多空／波動與財報時效自動調整，觸發保護機制者一律列危險。防守價由 ATR 波動率與結構均線推算，僅供風控參考。本工具整理公開資料，不構成投資建議，進出場請自行判斷並承擔風險。</p></div>';
+  html+=accItem("verdict","建倉綜合評分",true,bVer);
+
+  dom.main.innerHTML=html;
+  renderChips();
+  var kb=document.getElementById("kbar");
+  if(kb){ kb.scrollLeft=kb.scrollWidth; }
+}
+
+/* ===== 載入流程 ===== */
+function loadStock(rawCode,fallbackName){
+  var code=String(rawCode).trim().toUpperCase();
+  if(!/^[0-9A-Z]{4,6}$/.test(code)){ renderMain({status:"notfound",code:code}); return; }
+  var my=++reqId;
+  var demo=makeDemo(code,fallbackName);
+  try{ localStorage.setItem("twse_last",code); }catch(e){}
+  syncing=false; syncNote=null;
+
+  /* 立即示範資料 */
+  renderMain(buildView(code,fallbackName,{},demo,true));
+
+  /* 背景即時資料：Yahoo 取最新價與每日 OHLC（畫 K 棒）；證交所 OpenAPI 取財報籌碼 */
+  Promise.all([
+    ensureAll("valuation",EP.valuation),
+    ensureAll("margin",EP.margin),
+    ensureAll("institutional",EP.institutional),
+    ensureAll("companyInfo",EP.companyInfo),
+    ensureAll("revenue",EP.revenue),
+    fetchRealtime(code).catch(function(){return null;}),
+    fetchYahoo(code).catch(function(){return null;}),
+    fetchMonthlyRevenue(code).catch(function(){return null;}),
+    fetchInstDaily(code).catch(function(){return null;}),
+    fetchIndexHist().catch(function(){return null;}),
+    fetchBalanceMetrics(code).catch(function(){return null;}),
+    fetchMarginDaily(code).catch(function(){return null;}),
+    fetchGrossMargin(code).catch(function(){return null;}),
+    fetchInstTargets(code).catch(function(){return null;})
+  ]).then(function(res){
+    var yahoo=res[6];
+    var histKey="hist_"+code, histP;
+    if(yahoo&&yahoo.hist&&yahoo.hist.length){ histP=Promise.resolve(yahoo.hist); }
+    else if(cache[histKey]!==undefined){ histP=Promise.resolve(cache[histKey]); }
+    else { histP=Promise.all([fetchMonth(code,monthsBack(2)),fetchMonth(code,monthsBack(1)),fetchMonth(code,monthsBack(0))])
+        .then(function(parts){var h=parts[0].concat(parts[1],parts[2]); cache[histKey]=h.length?h:null; return cache[histKey];})
+        .catch(function(){cache[histKey]=null; return null;}); }
+    return histP.then(function(hist){ return {res:res,hist:hist,yahoo:yahoo}; });
+  }).then(function(bundle){
+    if(my!==reqId) return;
+    var res=bundle.res, yahoo=bundle.yahoo;
+    var valuation=res[0], companyInfo=res[3];
+    augmentNamesFrom(companyInfo,valuation);
+    var infoRow=findByCode(companyInfo,code,["公司代號","Code"]);
+    var industry=field(infoRow,["產業別"]);
+    var indAvg=industry?industryAverage(companyInfo,valuation,industry):null;
+    var rows={
+      priceRow:null,
+      valRow:findByCode(valuation,code,["Code","證券代號"]),
+      marginRow:findByCode(res[1],code,["股票代號","Code","證券代號"]),
+      instRow:findByCode(res[2],code,["Code","證券代號","股票代號"]),
+      infoRow:infoRow,
+      revRow:findByCode(res[4],code,["公司代號","Code"]),
+      indAvg:indAvg, hist:bundle.hist,
+      realtime:(yahoo&&yahoo.rt)?yahoo.rt:res[5],
+      monthlyRevenue:res[7], instDailyLive:res[8], indexHist:res[9], balanceMetrics:res[10], marginDailyLive:res[11], grossMargin:res[12], instTargets:res[13]
+    };
+    lastRowsByCode[code]=rows;
+    renderMain(buildView(code,fallbackName,rows,demo,false));
+  }).catch(function(){
+    if(my!==reqId) return;
+    renderMain(buildView(code,fallbackName,{},demo,false));
+  });
+}
+
+/* ===== 事件 ===== */
+// 偵測本機代理（proxy.py）是否運作，給使用者即時報價就緒狀態
+function checkProxy(){
+  var el=document.getElementById("proxystat"); if(!el) return;
+  var ctrl=new AbortController(), t=setTimeout(function(){ctrl.abort();},1500);
+  fetch(PROXY_BASE+"/ping",{signal:ctrl.signal}).then(function(r){return r.json();}).then(function(j){
+    clearTimeout(t);
+    if(j&&j.ok){
+      LOCAL_ALIVE=true;
+      if(PROXIES[0]!==LOCAL_PROXY) PROXIES.unshift(LOCAL_PROXY); // 確認存活才把本機代理排到最前
+      el.style.display="block"; el.style.color="#4F6B47"; el.innerHTML="● 代理已連線，即時報價就緒（"+PROXY_BASE+"）";
+    } else throw 0;
+  }).catch(function(){ clearTimeout(t);
+    el.style.display="block"; el.style.color="#9C6B2E";
+    el.innerHTML="○ 未偵測到代理，即時價走公開代理。電腦本機：proxy.py 與本檔放同資料夾，執行 <b>python3 proxy.py</b> 後改開 <b>http://localhost:8787</b>";
+  });
+}
+function init(){
+  dom.main=document.getElementById("main");
+  dom.watchBtn=document.getElementById("watchBtn");
+  dom.watchpanel=document.getElementById("watchpanel");
+  dom.upd=document.getElementById("upd");
+  dom.q=document.getElementById("q");
+  dom.ac=document.getElementById("aclist");
+  dom.idxband=document.getElementById("idxband");
+
+  document.getElementById("searchForm").addEventListener("submit",function(e){
+    e.preventDefault(); var v=dom.q.value.trim(); if(!v) return;
+    var code=resolveQuery(v);
+    if(!code){ renderMain({status:"notfound",code:v}); hideAC(); dom.q.blur(); return; }
+    loadStock(code, NAME_MAP[code]||null); dom.q.value=""; hideAC(); dom.q.blur();
+  });
+  dom.q.addEventListener("input",function(){ renderAC(dom.q.value); });
+  dom.q.addEventListener("focus",function(){ if(dom.q.value.trim()) renderAC(dom.q.value); });
+  dom.q.addEventListener("blur",function(){ setTimeout(hideAC,150); });
+
+  // 財報時間差使用者覆寫
+  document.addEventListener("change",function(e){
+    var t=e.target;
+    if(t&&t.id==="recencyInput"){
+      if(current.status!=="ready") return;
+      var v=parseInt(t.value,10);
+      if(isNaN(v)||v<0) delete recencyOverride[current.code];
+      else recencyOverride[current.code]=v;
+      var rws=lastRowsByCode[current.code]||{};
+      renderMain(buildView(current.code,current.name,rws,makeDemo(current.code,current.name),false));
+    }
+  });
+
+  document.addEventListener("click",function(e){
+    var t=e.target.closest("[data-act]"); if(!t) return;
+    var act=t.getAttribute("data-act");
+    if(act==="pick"){ var pc=t.getAttribute("data-code"); loadStock(pc,t.getAttribute("data-name")); dom.q.value=""; hideAC(); dom.q.blur(); }
+    else if(act==="togglewatchpanel"){ watchPanelOpen=!watchPanelOpen; if(!watchPanelOpen) editing=false; renderChips(); }
+    else if(act==="toggleedit"){ editing=!editing; if(editing) watchPanelOpen=true; renderChips(); }
+    else if(act==="load"){ loadStock(t.getAttribute("data-code"),t.getAttribute("data-name")); }
+    else if(act==="syncprice"){ syncPrice(); }
+    else if(act==="remove"){ var c=t.getAttribute("data-code"); watch=watch.filter(function(w){return w.code!==c;}); saveWatch(); renderChips(); }
+    else if(act==="togglewatch"){
+      if(current.status!=="ready") return;
+      if(watch.some(function(w){return w.code===current.code;})) watch=watch.filter(function(w){return w.code!==current.code;});
+      else watch.push({code:current.code,name:current.name});
+      saveWatch(); renderMain(current);
+    }
+    else if(act==="zoomin"){ if(candleZoom<CW_STEPS.length-1){candleZoom++; renderMain(current);} }
+    else if(act==="zoomout"){ if(candleZoom>0){candleZoom--; renderMain(current);} }
+    else if(act==="refreshidx"){ loadIndices(); }
+    else if(act==="acc"){
+      var key=t.getAttribute("data-key"); openSec[key]=!openSec[key]; renderMain(current);
+    }
+    else if(act==="accall"){
+      var v=t.getAttribute("data-v")==="1"; ACC_KEYS.forEach(function(k){openSec[k]=v;}); renderMain(current);
+    }
+    else if(act==="onlyverdict"){
+      ACC_KEYS.forEach(function(k){openSec[k]=false;}); openSec.verdict=true; renderMain(current);
+    }
+    else if(act==="togglecyclical"){
+      if(current.status!=="ready") return;
+      cyclicalOverride[current.code]=!cyclicalOverride[current.code];
+      var rws=lastRowsByCode[current.code]||{};
+      renderMain(buildView(current.code,current.name,rws,makeDemo(current.code,current.name),false));
+    }
+  });
+
+  renderChips();
+  renderIndices();
+  loadIndices();
+  checkProxy();
+  // 預先載入清單以充實中文搜尋（背景）：上市、上櫃、全市場
+  Promise.all([ensureAll("companyInfo",EP.companyInfo),ensureAll("valuation",EP.valuation)])
+    .then(function(r){ augmentNamesFrom(r[0],r[1]); }).catch(function(){});
+  ensureAll("otcInfo",EP.otcInfo).then(function(a){ augmentNamesFrom(a,null); }).catch(function(){});
+  fetchAllStockInfo().then(function(a){ if(a) addNames(a); }).catch(function(){});
+  var last; try{ last=localStorage.getItem("twse_last"); }catch(e){}
+  var start=last||"2330";
+  loadStock(start, NAME_MAP[start]||null);
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script>
+</body>
+</html>

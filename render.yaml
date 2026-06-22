@@ -1,0 +1,9 @@
+# Render 一鍵部署設定（Blueprint）。把這個 repo 連到 Render 後會自動依此建立服務。
+services:
+  - type: web
+    name: maimai-stock-proxy
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python proxy.py
+    autoDeploy: true
