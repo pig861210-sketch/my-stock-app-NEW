@@ -49,6 +49,8 @@
   .aclist li:active,.aclist li.hl{background:var(--paperDeep);}
   .aclist .acn{font-size:14px;color:var(--coffee);}
   .aclist .acc{font-size:12px;color:var(--taupe);font-family:ui-monospace,monospace;margin-left:auto;}
+  .aclist .achdr{font-size:11px;color:var(--taupe);padding:7px 10px 3px;letter-spacing:.05em;cursor:default;}
+  .aclist .achdr.hl,.aclist .achdr:active{background:transparent;}
   .idxband{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;
     padding:12px 22px;background:var(--paperDeep);border-bottom:1px solid var(--rule);}
   .idxband::-webkit-scrollbar{display:none;}
@@ -1539,6 +1541,25 @@ function renderAC(q){
 }
 function hideAC(){ if(dom.ac){ dom.ac.className="aclist"; dom.ac.innerHTML=""; } }
 
+/* ----- 最近查詢記憶（最多 5 檔） ----- */
+function loadRecent(){ try{ return JSON.parse(localStorage.getItem("twse_recent")||"[]"); }catch(e){ return []; } }
+function pushRecent(code,name){
+  if(!code) return;
+  var arr=loadRecent().filter(function(x){return x.code!==code;});
+  arr.unshift({code:code,name:name||(typeof NAME_MAP!=="undefined"&&NAME_MAP[code])||code});
+  try{ localStorage.setItem("twse_recent",JSON.stringify(arr.slice(0,5))); }catch(e){}
+}
+function renderRecent(){
+  if(!dom.ac) return;
+  var arr=loadRecent();
+  if(!arr.length){ hideAC(); return; }
+  acItems=arr;
+  dom.ac.innerHTML='<li class="achdr">最近查詢</li>'+arr.map(function(it){
+    return '<li data-act="pick" data-code="'+it.code+'" data-name="'+esc(it.name)+'"><span class="acn">'+esc(it.name)+'</span><span class="acc">'+it.code+'</span></li>';
+  }).join("");
+  dom.ac.className="aclist show";
+}
+
 
 function statColor(tone){ return tone==="bull"?COL.red:tone==="bear"?COL.green:COL.coffee; }
 function stat(label,value,tone){
@@ -1962,6 +1983,7 @@ function loadStock(rawCode,fallbackName){
   var my=++reqId;
   var demo=makeDemo(code,fallbackName);
   try{ localStorage.setItem("twse_last",code); }catch(e){}
+  pushRecent(code, fallbackName);
   syncing=false; lastSync=null;
 
   /* 立即示範資料 */
@@ -2051,8 +2073,8 @@ function init(){
     if(!code){ renderMain({status:"notfound",code:v}); hideAC(); dom.q.blur(); return; }
     loadStock(code, NAME_MAP[code]||null); dom.q.value=""; hideAC(); dom.q.blur();
   });
-  dom.q.addEventListener("input",function(){ renderAC(dom.q.value); });
-  dom.q.addEventListener("focus",function(){ if(dom.q.value.trim()) renderAC(dom.q.value); });
+  dom.q.addEventListener("input",function(){ var v=dom.q.value; if(v.trim()) renderAC(v); else renderRecent(); });
+  dom.q.addEventListener("focus",function(){ if(dom.q.value.trim()) renderAC(dom.q.value); else renderRecent(); });
   dom.q.addEventListener("blur",function(){ setTimeout(hideAC,150); });
 
   // 財報時間差使用者覆寫
