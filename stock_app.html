@@ -1485,9 +1485,10 @@ var watch=loadWatch();
 var editing=false;
 var watchPanelOpen=false;
 var reqId=0;
-var syncing=false;        // 同步最新股價中
-var syncNote=null;        // {code,msg,ok} 同步結果提示
-var lastRowsByCode={};    // 快取最近一次的即時資料列，供同步免重抓財報籌碼
+var syncing=false;        // 自動更新進行中（避免重疊）
+var lastSync=null;        // {code,time} 最後一次成功更新
+var AUTO_REFRESH_MS=10000;// 自動更新間隔（毫秒）
+var lastRowsByCode={};    // 快取最近一次的即時資料列，供更新免重抓財報籌碼
 var cyclicalOverride={};  // 使用者手動標記為景氣循環股（依代號）
 var recencyOverride={};   // 使用者覆寫「距上次財報幾個月」（依代號）
 var CW_STEPS=[3,4,5,6,8,11,15,22,30,40];   // 每根 K 棒像素寬（縮放等級）；最大約 10 根滿版（近10日）
@@ -1585,27 +1586,22 @@ function renderChips(){
     '<div class="wp-list">'+list+'</div>';
 }
 
-// 🚀 一鍵同步：重抓 Yahoo 即時價＋成交量，套回評分模型；失敗降級提示
-function syncPrice(){
+function hms(d){function p(n){return(n<10?"0":"")+n;}return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());}
+// 自動定時更新：靜默重抓 Yahoo 即時價＋成交量，套回評分模型（無按鈕、不打擾）
+function autoRefresh(){
   if(syncing||!current||current.status!=="ready") return;
+  if(typeof document!=="undefined"&&document.hidden) return; // 分頁不在前景時略過，省資源
   var code=current.code, name=current.name;
-  syncing=true; syncNote=null; renderMain(current);
+  syncing=true;
   fetchYahoo(code).then(function(y){
     syncing=false;
     if(y&&y.rt){
       var demo=makeDemo(code,name);
       var rows=Object.assign({},lastRowsByCode[code]||{},{realtime:y.rt,hist:y.hist});
-      syncNote={code:code,ok:true,msg:"已同步："+(y.rt.intraday?"盤中即時":"最新成交")+" NT$"+fmtNum(y.rt.close,2)+"，評分已更新。"};
-      renderMain(buildView(code,name,rows,demo,false));
-    } else {
-      syncNote={code:code,ok:false,msg:"自動抓取失敗（可能被網路或 CORS 阻擋）。已沿用現有資料，請稍後再點一次重試。"};
-      renderMain(current);
+      lastSync={code:code,time:new Date()};
+      if(current&&current.code===code) renderMain(buildView(code,name,rows,demo,false));
     }
-  }).catch(function(){
-    syncing=false;
-    syncNote={code:code,ok:false,msg:"自動抓取失敗（網路阻擋或逾時）。已沿用現有資料，請稍後再試。"};
-    renderMain(current);
-  });
+  }).catch(function(){ syncing=false; });
 }
 function renderMain(st){
   current=st;
@@ -1631,8 +1627,10 @@ function renderMain(st){
     '<span class="src" style="color:'+(st.priceSource==="demo"?COL.faint:COL.gold)+'"><span class="dot" style="'+(st.priceSource==="demo"?"border:1px solid "+COL.faint:"background:"+COL.gold)+'"></span>'+priceSrcLabel(st)+'</span>'+
     '<button class="addbtn'+(inW?" in":"")+'" data-act="togglewatch">'+(inW?"✓ 已加入自選":"＋ 加入自選")+'</button>'+
     '</div>'+
-    '<button class="syncbtn'+(syncing?" busy":"")+'" data-act="syncprice"'+(syncing?" disabled":"")+'>'+(syncing?'<span class="spin"></span>同步中…':'🚀 自動同步最新股價')+'</button>'+
-    (syncNote&&syncNote.code===st.code?'<div class="syncnote '+(syncNote.ok?"ok":"err")+'">'+esc(syncNote.msg)+'</div>':'')+
+    '<div class="syncauto" style="margin-top:8px;font-size:11px;color:'+COL.taupe+';display:flex;align-items:center;gap:6px">'+
+      '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+COL.gold+'"></span>'+
+      '每 '+(AUTO_REFRESH_MS/1000)+' 秒自動更新股價'+(lastSync&&lastSync.code===st.code?(' · 最後更新 '+hms(lastSync.time)):'')+
+    '</div>'+
     '</div>';
 
   /* K 線圖（移至標頭下方） */
@@ -1964,7 +1962,7 @@ function loadStock(rawCode,fallbackName){
   var my=++reqId;
   var demo=makeDemo(code,fallbackName);
   try{ localStorage.setItem("twse_last",code); }catch(e){}
-  syncing=false; syncNote=null;
+  syncing=false; lastSync=null;
 
   /* 立即示範資料 */
   renderMain(buildView(code,fallbackName,{},demo,true));
@@ -2031,7 +2029,7 @@ function checkProxy(){
     if(j&&j.ok){
       LOCAL_ALIVE=true;
       if(PROXIES[0]!==LOCAL_PROXY) PROXIES.unshift(LOCAL_PROXY); // 確認存活才把本機代理排到最前
-      el.style.display="block"; el.style.color="#4F6B47"; el.innerHTML="● 代理已連線，即時報價就緒（"+PROXY_BASE+"）";
+      el.style.display="block"; el.style.color="#4F6B47"; el.innerHTML="● 網路已連線，股價資訊已即時更新";
     } else throw 0;
   }).catch(function(){ clearTimeout(t);
     el.style.display="block"; el.style.color="#9C6B2E";
@@ -2077,7 +2075,6 @@ function init(){
     else if(act==="togglewatchpanel"){ watchPanelOpen=!watchPanelOpen; if(!watchPanelOpen) editing=false; renderChips(); }
     else if(act==="toggleedit"){ editing=!editing; if(editing) watchPanelOpen=true; renderChips(); }
     else if(act==="load"){ loadStock(t.getAttribute("data-code"),t.getAttribute("data-name")); }
-    else if(act==="syncprice"){ syncPrice(); }
     else if(act==="remove"){ var c=t.getAttribute("data-code"); watch=watch.filter(function(w){return w.code!==c;}); saveWatch(); renderChips(); }
     else if(act==="togglewatch"){
       if(current.status!=="ready") return;
@@ -2109,6 +2106,7 @@ function init(){
   renderIndices();
   loadIndices();
   checkProxy();
+  setInterval(autoRefresh, AUTO_REFRESH_MS); // 每數秒自動更新目前個股的即時股價與評分
   // 預先載入清單以充實中文搜尋（背景）：上市、上櫃、全市場
   Promise.all([ensureAll("companyInfo",EP.companyInfo),ensureAll("valuation",EP.valuation)])
     .then(function(r){ augmentNamesFrom(r[0],r[1]); }).catch(function(){});
