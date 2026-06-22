@@ -185,7 +185,7 @@
   .kbar{flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .kbar::-webkit-scrollbar{display:none;}
   .kbar svg{min-width:100%;}
-  .zoom{position:absolute;top:8px;right:8px;display:flex;gap:6px;}
+  .zoom{position:absolute;bottom:8px;left:8px;display:flex;gap:6px;z-index:2;}
   .zbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--rule);
     background:rgba(239,231,214,.92);color:var(--coffee);font-size:18px;line-height:1;
     display:flex;align-items:center;justify-content:center;}
@@ -1145,7 +1145,7 @@ function computeScore(ctx){
     var atrStop=(atr!=null)?price-2*atr:null;       // 2×ATR 動態停損
     var cands=[]; if(struct) cands.push(struct.v); if(atrStop!=null) cands.push(atrStop);
     cands=cands.filter(function(x){return x<price;});
-    var defend=cands.length?Math.max.apply(null,cands):null;   // 取較貼近現價者為實戰防守價
+    var defend=cands.length?Math.max.apply(null,cands):null;   // 取較貼近現價者為防守價格
     var basis=(struct&&defend===struct.v)?("收盤跌破"+struct.n):(atrStop!=null&&defend===atrStop?"收盤跌破 2×ATR 動態停損":"");
     exit={price:price, atr:atr, atrPct:(atr!=null&&price?atr/price*100:null),
       ma20:ctx.ma20, ma60:ctx.ma60, atrStop:atrStop, struct:struct,
@@ -1487,7 +1487,7 @@ var watchPanelOpen=false;
 var reqId=0;
 var syncing=false;        // 自動更新進行中（避免重疊）
 var lastSync=null;        // {code,time} 最後一次成功更新
-var AUTO_REFRESH_MS=10000;// 自動更新間隔（毫秒）
+var AUTO_REFRESH_MS=5000; // 自動更新間隔（毫秒）
 var lastRowsByCode={};    // 快取最近一次的即時資料列，供更新免重抓財報籌碼
 var cyclicalOverride={};  // 使用者手動標記為景氣循環股（依代號）
 var recencyOverride={};   // 使用者覆寫「距上次財報幾個月」（依代號）
@@ -1875,12 +1875,12 @@ function renderMain(st){
     '<div class="cl-grade" style="color:'+gc+'">'+sc.grade.label+'　<span class="cl-score">總分 '+(sc.raw>0?"+":"")+(sc.raw*100).toFixed(0)+'</span></div>'+
     '<div class="cl-strat">操作策略：<b>'+sc.conclusion.strategy+'</b></div>'+
     '<div class="cl-text">'+sc.conclusion.text+'</div></div>';
-  // 風控退場建議（防守價）— 緊接在預測進場核心卡下方
+  // 風險控制退場建議 — 緊接在預測進場核心卡下方
   var ex=sc.exit;
-  bVer+='<div class="ryhd" style="margin-top:16px;color:'+COL.gold+'">風控退場建議（防守價）</div>';
+  bVer+='<div class="ryhd" style="margin-top:16px;color:'+COL.gold+'">風險控制退場建議</div>';
   if(ex && ex.defend!=null){
     bVer+='<div class="concl" style="border-color:'+COL.gold+'">'+
-      '<div class="cl-grade" style="color:'+COL.gold+'">實戰防守價 '+fmtNum(ex.defend,2)+(ex.defendPct!=null?'　<span class="cl-score">距現價 '+fmtNum(ex.defendPct,1)+'%</span>':'')+'</div>'+
+      '<div class="cl-grade" style="color:'+COL.gold+'">防守價格 '+fmtNum(ex.defend,2)+(ex.defendPct!=null?'　<span class="cl-score">距現價 '+fmtNum(ex.defendPct,1)+'%</span>':'')+'</div>'+
       '<div class="cl-strat">觸發條件：<b>'+(ex.basis||'結構／波動防守')+'</b></div>'+
       '<div class="cl-text">現價 '+fmtNum(ex.price,2)+'；月線 MA20 '+(ex.ma20!=null?fmtNum(ex.ma20,2):'—')+'、季線 MA60 '+(ex.ma60!=null?fmtNum(ex.ma60,2):'—')+'；ATR(14) '+(ex.atr!=null?fmtNum(ex.atr,2)+(ex.atrPct!=null?'（'+fmtNum(ex.atrPct,1)+'%）':''):'—')+'，2×ATR 動態停損 '+(ex.atrStop!=null?fmtNum(ex.atrStop,2):'—')+'。<b style="color:'+COL.red+'">股價收盤跌破防守價，必須堅決減碼或停損，切勿凹單。</b></div></div>';
   } else {
