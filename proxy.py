@@ -13,6 +13,21 @@
 import sys, os, json, re, html as htmllib, urllib.parse, urllib.request, urllib.error, http.cookiejar
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading, time
+
+# ---- 線上人數追蹤（記憶體內；服務休眠歸零屬正常） ----
+ONLINE = {}
+ONLINE_LOCK = threading.Lock()
+ONLINE_TTL = 35   # 秒；超過此時間沒心跳即視為離線
+
+def beat(cid):
+    now = time.time()
+    with ONLINE_LOCK:
+        if cid:
+            ONLINE[cid] = now
+        for k in [k for k, v in ONLINE.items() if now - v > ONLINE_TTL]:
+            del ONLINE[k]
+        return len(ONLINE)
 
 PORT = int(os.environ.get("PORT") or (sys.argv[1] if len(sys.argv) > 1 else 8787))
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -220,6 +235,106 @@ def diag(code):
 
     return res
 
+_mis_opener_cache = None
+def _mis_opener():
+    """證交所 MIS 需要先取得 session cookie；快取 opener 重複使用。"""
+    global _mis_opener_cache
+    if _mis_opener_cache is not None:
+        return _mis_opener_cache
+    cj = http.cookiejar.CookieJar()
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    try:
+        op.open(urllib.request.Request("https://mis.twse.com.tw/stock/index.jsp", headers=HDRS), timeout=8).read()
+    except Exception:
+        pass
+    _mis_opener_cache = op
+    return op
+
+def _mis_quotes(codes, out):
+    """證交所官方即時批次（最接近實際成交價）。寫入 out[code]={price,prevClose}。"""
+    op = _mis_opener()
+    hdr = dict(HDRS); hdr["Referer"] = "https://mis.twse.com.tw/stock/index.jsp"
+    for prefix in ("tse", "otc"):
+        remaining = [c for c in codes if c not in out]
+        if not remaining:
+            break
+        for i in range(0, len(remaining), 60):
+            chunk = remaining[i:i + 60]
+            ex = "|".join(prefix + "_" + c + ".tw" for c in chunk)
+            url = ("https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch="
+                   + urllib.parse.quote(ex) + "&json=1&delay=0&_=" + str(int(time.time() * 1000)))
+            try:
+                with op.open(urllib.request.Request(url, headers=hdr), timeout=12) as r:
+                    data = json.loads(r.read().decode("utf-8", "replace"))
+            except Exception as e:
+                print(f"[-] MIS 批次失敗: {e}")
+                continue
+            for a in (data.get("msgArray") or []):
+                code = a.get("c")
+                if not code or code in out:
+                    continue
+                z = a.get("z"); y = a.get("y"); b = a.get("b")
+                price = None
+                if z not in (None, "", "-"):
+                    try: price = float(z)
+                    except Exception: price = None
+                if price is None and b:
+                    try: price = float(str(b).split("_")[0])
+                    except Exception: price = None
+                prev = None
+                if y not in (None, "", "-"):
+                    try: prev = float(y)
+                    except Exception: prev = None
+                if price is not None:
+                    out[code] = {"price": price, "prevClose": prev}
+
+def scrape_quotes(codes):
+    """一次查多檔即時價＋昨收。證交所官方即時優先，Yahoo 補抓未取得者。"""
+    out = {}
+    codes = [c for c in codes if c]
+    if not codes:
+        return out
+    try:
+        _mis_quotes(codes, out)        # 1) 證交所官方即時（最準）
+    except Exception as e:
+        print(f"[-] MIS 整體失敗: {e}")
+    missing = [c for c in codes if c not in out]
+    if missing:
+        _yahoo_quotes(missing, out)    # 2) Yahoo 補抓
+    return out
+
+def _yahoo_quotes(codes, out):
+    """Yahoo v7 quote 批次補抓（MIS 未取得者）。"""
+    opener, crumb = _yahoo_session()
+
+    def query(symbols):
+        results = []
+        for i in range(0, len(symbols), 50):
+            chunk = symbols[i:i + 50]
+            url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=" + urllib.parse.quote(",".join(chunk))
+            if crumb:
+                url += "&crumb=" + urllib.parse.quote(crumb)
+            try:
+                with opener.open(urllib.request.Request(url, headers=HDRS), timeout=12) as r:
+                    data = json.loads(r.read().decode("utf-8", "replace"))
+                results += ((data.get("quoteResponse") or {}).get("result") or [])
+            except Exception as e:
+                print(f"[-] Yahoo quotes 批次失敗: {e}")
+        return results
+
+    def absorb(results):
+        for it in results:
+            code = it.get("symbol", "").split(".")[0]
+            price = it.get("regularMarketPrice")
+            prev = it.get("regularMarketPreviousClose")
+            if price is not None and code not in out:
+                out[code] = {"price": price, "prevClose": prev}
+
+    absorb(query([c + ".TW" for c in codes]))
+    miss = [c for c in codes if c not in out]
+    if miss:
+        absorb(query([c + ".TWO" for c in miss]))
+
 def scrape_fundamentals(code):
     """Yahoo quoteSummary 抓本益比、股價淨值比、殖利率、EPS（公開、即時）。"""
     code = str(code).strip()
@@ -330,6 +445,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, b'{"ok":true}', "application/json")
             return
 
+        # 2a) 線上人數心跳 /beat?id=xxx
+        if parsed.path == "/beat":
+            qs = urllib.parse.parse_qs(parsed.query)
+            cid = qs.get("id", [""])[0]
+            n = beat(cid)
+            self._send(200, json.dumps({"online": n}).encode("utf-8"), "application/json")
+            return
+
         # 2c) 診斷：一次測試所有目標價來源 /diag?code=2330
         if parsed.path == "/diag":
             qs = urllib.parse.parse_qs(parsed.query)
@@ -371,6 +494,19 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 msg = json.dumps({"error": str(e), "fundamentals": {}}).encode("utf-8")
                 self._send(502, msg, "application/json")
+            return
+
+        # 2f) 批次報價 /quotes?codes=2330,2317,2454
+        if parsed.path == "/quotes":
+            qs = urllib.parse.parse_qs(parsed.query)
+            raw = qs.get("codes", [""])[0]
+            codes = [c.strip().upper() for c in raw.split(",") if c.strip()]
+            try:
+                data = scrape_quotes(codes)
+                body = json.dumps({"quotes": data}, ensure_ascii=False).encode("utf-8")
+                self._send(200, body, "application/json; charset=utf-8")
+            except Exception as e:
+                self._send(502, json.dumps({"error": str(e), "quotes": {}}).encode("utf-8"), "application/json")
             return
 
         # 3) 服務 App HTML 首頁
