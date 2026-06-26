@@ -29,6 +29,124 @@ def beat(cid):
             del ONLINE[k]
         return len(ONLINE)
 
+# ---- 外部資料庫（Firebase Realtime Database，純 HTTP；設環境變數即啟用，否則用本機檔）----
+FIREBASE_URL = os.environ.get("FIREBASE_URL", "").rstrip("/")
+FIREBASE_SECRET = os.environ.get("FIREBASE_SECRET", "")
+def _fb_on():
+    return bool(FIREBASE_URL)
+def _fb_addr(path):
+    u = FIREBASE_URL + "/" + path + ".json"
+    if FIREBASE_SECRET:
+        u += "?auth=" + urllib.parse.quote(FIREBASE_SECRET)
+    return u
+def _fb_get(path):
+    if not _fb_on():
+        return None
+    try:
+        with urllib.request.urlopen(_fb_addr(path), timeout=10) as r:
+            return json.loads(r.read().decode("utf-8", "replace"))
+    except Exception as e:
+        print(f"[-] Firebase GET {path} 失敗: {e}")
+        return None
+def _fb_put(path, obj):
+    if not _fb_on():
+        return False
+    try:
+        data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(_fb_addr(path), data=data, method="PUT",
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            r.read()
+        return True
+    except Exception as e:
+        print(f"[-] Firebase PUT {path} 失敗: {e}")
+        return False
+
+# ---- 用戶自訂評分（社群共享）----
+RATINGS_LOCK = threading.Lock()
+def _ratings_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "ratings.json")
+def _load_ratings():
+    if _fb_on():
+        d = _fb_get("ratings")
+        if isinstance(d, list):
+            return d
+    try:
+        with open(_ratings_path(), "r", encoding="utf-8") as f:
+            d = json.load(f)
+            return d if isinstance(d, list) else []
+    except Exception:
+        return []
+RATINGS = _load_ratings()
+def _save_ratings():
+    if _fb_on():
+        _fb_put("ratings", RATINGS)
+        return
+    try:
+        with open(_ratings_path(), "w", encoding="utf-8") as f:
+            json.dump(RATINGS, f, ensure_ascii=False)
+    except Exception as e:
+        print(f"[-] 評分存檔失敗: {e}")
+def add_rating(d):
+    r = {
+        "id": str(int(time.time() * 1000)) + "-" + str(len(RATINGS)),
+        "ts": int(time.time() * 1000),
+        "code": str(d.get("code", ""))[:10].strip(),
+        "name": str(d.get("name", ""))[:40].strip(),
+        "aspect": str(d.get("aspect", ""))[:10].strip(),
+        "desc": str(d.get("desc", ""))[:1000].strip(),
+        "nick": (str(d.get("nick", "")).strip() or "匿名")[:30],
+    }
+    if not r["code"] or not r["desc"]:
+        return None
+    with RATINGS_LOCK:
+        RATINGS.insert(0, r)
+        del RATINGS[500:]
+        _save_ratings()
+    return r
+
+# ---- 搜尋次數（大家都在看）----
+COUNTS_LOCK = threading.Lock()
+def _counts_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "counts.json")
+def _load_counts():
+    if _fb_on():
+        d = _fb_get("counts")
+        if isinstance(d, dict):
+            return {k: int(v) for k, v in d.items() if str(v).lstrip("-").isdigit()}
+    try:
+        with open(_counts_path(), "r", encoding="utf-8") as f:
+            d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+COUNTS = _load_counts()
+_counts_last_save = [0.0]
+def _save_counts(force=False):
+    now = time.time()
+    if not force and now - _counts_last_save[0] < 10:  # 節流：最多每 10 秒寫一次外部
+        return
+    _counts_last_save[0] = now
+    if _fb_on():
+        _fb_put("counts", COUNTS)
+        return
+    try:
+        with open(_counts_path(), "w", encoding="utf-8") as f:
+            json.dump(COUNTS, f, ensure_ascii=False)
+    except Exception as e:
+        print(f"[-] 次數存檔失敗: {e}")
+def hit(code):
+    code = str(code).strip().upper()
+    if not code:
+        return
+    with COUNTS_LOCK:
+        COUNTS[code] = int(COUNTS.get(code, 0)) + 1
+        _save_counts()
+def top_codes(n=10):
+    with COUNTS_LOCK:
+        items = sorted(COUNTS.items(), key=lambda kv: kv[1], reverse=True)[:n]
+    return [{"code": k, "count": v} for k, v in items]
+
 PORT = int(os.environ.get("PORT") or (sys.argv[1] if len(sys.argv) > 1 else 8787))
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -410,6 +528,24 @@ class Handler(BaseHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/ratings":
+            try:
+                ln = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(ln) if ln > 0 else b"{}"
+                d = json.loads(raw.decode("utf-8", "replace"))
+            except Exception:
+                self._send(400, b'{"error":"bad json"}', "application/json")
+                return
+            r = add_rating(d)
+            if not r:
+                self._send(400, b'{"error":"missing code or desc"}', "application/json")
+                return
+            self._send(200, json.dumps({"ok": True, "rating": r}, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
+            return
+        self._send(404, b'{"error":"not found"}', "application/json")
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
 
@@ -451,6 +587,30 @@ class Handler(BaseHTTPRequestHandler):
             cid = qs.get("id", [""])[0]
             n = beat(cid)
             self._send(200, json.dumps({"online": n}).encode("utf-8"), "application/json")
+            return
+
+        # 2g) 用戶自訂評分清單 /ratings?code=（code 可選，過濾單檔）
+        if parsed.path == "/ratings":
+            qs = urllib.parse.parse_qs(parsed.query)
+            code = (qs.get("code", [""])[0] or "").strip()
+            with RATINGS_LOCK:
+                data = [r for r in RATINGS if (not code or r.get("code") == code)][:200]
+            body = json.dumps({"ratings": data}, ensure_ascii=False).encode("utf-8")
+            self._send(200, body, "application/json; charset=utf-8")
+            return
+
+        # 2h) 累計搜尋次數 /hit?code=xxxx（大家都在看）
+        if parsed.path == "/hit":
+            qs = urllib.parse.parse_qs(parsed.query)
+            code = (qs.get("code", [""])[0] or "").strip()
+            hit(code)
+            self._send(200, b'{"ok":true}', "application/json")
+            return
+
+        # 2i) 搜尋次數前 10 名 /top
+        if parsed.path == "/top":
+            body = json.dumps({"top": top_codes(10)}, ensure_ascii=False).encode("utf-8")
+            self._send(200, body, "application/json; charset=utf-8")
             return
 
         # 2c) 診斷：一次測試所有目標價來源 /diag?code=2330

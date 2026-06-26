@@ -100,6 +100,39 @@
   .holdgrid .hl{font-size:12px;color:var(--coffeeMid);}
   .holdgrid .hv{font-size:20px;color:var(--coffee);margin:4px 0 2px;}
   .holdgrid .hs{font-size:10px;color:var(--taupe);}
+  .ratingpanel{display:none;}
+  .ratingpanel.show{display:block;margin-top:10px;}
+  .rate-head .t{font-size:12px;color:var(--taupe);}
+  .rate-acwrap{position:relative;margin-top:8px;}
+  .rate-acwrap input{width:100%;box-sizing:border-box;font-size:13px;padding:9px;border:1px solid var(--rule);border-radius:6px;background:var(--paper);color:var(--coffee);}
+  .rate-selected{font-size:12.5px;color:var(--coffeeMid);margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .rate-clear{font-size:11px;color:var(--coffeeMid);background:none;border:1px solid var(--rule);border-radius:6px;padding:3px 8px;}
+  .rate-aspects{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .rate-aspects .rl{font-size:11px;color:var(--taupe);margin-right:2px;}
+  .aspbtn{font-size:12.5px;color:var(--coffeeMid);background:var(--paperDeep);border:1px solid var(--rule);border-radius:999px;padding:6px 14px;}
+  .aspbtn.on{background:var(--coffee);color:var(--paper);border-color:var(--coffee);}
+  .rate-desc{width:100%;box-sizing:border-box;min-height:64px;margin-top:10px;font-size:13px;padding:9px;border:1px solid var(--rule);border-radius:6px;background:var(--paper);color:var(--coffee);resize:vertical;font-family:inherit;}
+  .rate-nick{width:100%;box-sizing:border-box;margin-top:8px;font-size:13px;padding:9px;border:1px solid var(--rule);border-radius:6px;background:var(--paper);color:var(--coffee);}
+  .rate-submit{width:100%;margin-top:10px;padding:11px;border-radius:8px;border:1px solid var(--coffee);background:var(--coffee);color:var(--paper);font-size:13.5px;}
+  .rate-submit:disabled{opacity:.6;}
+  .rate-cards-h{font-size:12px;color:var(--taupe);margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--ruleSoft);}
+  .ratecard{border:1px solid var(--rule);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--paper);}
+  .rc-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .rc-asp{font-size:11px;border:1px solid;border-radius:999px;padding:2px 9px;}
+  .rc-stock{font-size:13px;color:var(--coffee);font-weight:600;background:none;border:0;padding:0;text-align:left;}
+  .rc-desc{font-size:13.5px;color:var(--coffee);line-height:1.55;white-space:pre-wrap;}
+  .rc-foot{font-size:11px;color:var(--taupe);margin-top:8px;}
+  .trendpanel{display:none;}
+  .trendpanel.show{display:block;margin-top:10px;}
+  .trendrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;margin-bottom:7px;}
+  .tr-rank{flex:0 0 auto;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;font-size:12px;font-weight:700;color:var(--paper);background:var(--taupe);}
+  .tr-rank1{background:#c8962e;} .tr-rank2{background:#9aa0a6;} .tr-rank3{background:#b0703a;}
+  .tr-main{flex:1 1 auto;min-width:0;}
+  .tr-name{display:block;font-size:13.5px;color:var(--coffee);font-weight:600;}
+  .tr-code{font-size:11px;color:var(--taupe);font-weight:400;}
+  .tr-bar{display:block;height:5px;border-radius:3px;background:var(--paperDeep);margin-top:5px;overflow:hidden;}
+  .tr-fill{display:block;height:100%;background:var(--coffee);border-radius:3px;}
+  .tr-cnt{flex:0 0 auto;font-size:12px;color:var(--coffeeMid);}
 
   .usercount{font-size:11.5px;color:var(--taupe);text-align:right;padding:6px 4px 0;letter-spacing:.02em;}
   .usercount #ucnum{color:var(--gold);font-weight:600;}
@@ -292,9 +325,11 @@
       <button class="btn" type="submit">查詢</button>
     </form>
     <div class="watchrow">
+      <button class="wbtn on" id="homeBtn" data-act="gohome">🏠 首頁</button>
       <button class="wbtn" id="watchBtn" data-act="togglewatchpanel">★ 自選</button>
       <button class="wbtn" id="portfolioBtn" data-act="toggleportfolio">📦 庫存</button>
-      <button class="wbtn disabled" id="customBtn" disabled title="即將推出">⚙ 自訂參數</button>
+      <button class="wbtn disabled" id="ratingBtn" data-act="togglerating" disabled title="暫停使用">📝 用戶自訂評分</button>
+      <button class="wbtn disabled" id="trendBtn" data-act="toggletrend" disabled title="暫停使用">👀 大家都在看</button>
     </div>
     <div class="pfhead-totals">
       <div class="pfh-item"><span class="pfh-lbl">股票總損益</span> <b id="pfTotalHead">—</b></div>
@@ -302,9 +337,11 @@
     </div>
     <div class="watchpanel" id="watchpanel"></div>
     <div class="portfoliopanel" id="portfoliopanel"></div>
+    <div class="ratingpanel" id="ratingpanel"></div>
+    <div class="trendpanel" id="trendpanel"></div>
   </header>
   <section class="idxband" id="idxband" data-act="refreshidx"></section>
-  <div class="idxnote">台指近／近全為期交所即時資料，公開代理通常無法取得，故顯示「—」。點一下指數列可重新整理。</div>
+  <div class="idxnote" id="idxnote">台指近／近全為期交所即時資料，公開代理通常無法取得，故顯示「—」。點一下指數列可重新整理。</div>
   <div id="proxystat" style="font-size:11px;line-height:1.5;padding:8px 22px;display:none;border-bottom:1px solid var(--rule);background:var(--paperDeep);"></div>
   <main id="main"></main>
   <footer>
@@ -743,8 +780,8 @@ function fetchRealtime(code){
       var a=json&&json.msgArray&&json.msgArray[0];
       if(!a) return tryChan(i+1);
       var last=toNum(a.z), prev=toNum(a.y), bid=a.b?toNum(String(a.b).split("_")[0]):null;
-      var close=last!=null?last:(bid!=null?bid:prev);
-      if(close==null) return tryChan(i+1);
+      var close=(last!=null)?last:(bid!=null?bid:null);   // 今日無成交價時不用昨收(prev)，以免顯示成昨天
+      if(close==null) return tryChan(i+1);                 // MIS 今日尚無成交 → 視為無即時，改用 Yahoo 今日價
       return {name:a.n||null,close:close,prevClose:prev,change:prev!=null?close-prev:null,
         time:a.t||null,date:a.d||null,intraday:last!=null};
     }).catch(function(){return tryChan(i+1);});
@@ -1626,6 +1663,14 @@ var pfQuotes={};                 // code -> {price,prevClose}
 var pfLoading=false;
 var pfFetching=false;            // 報價抓取進行中（避免重疊）
 var pfPage=0;                    // 庫存清單目前頁（0 起算）
+var ratingOpen=false;            // 用戶自訂評分面板
+var ratingStock=null;            // {code,name} 目前評分標的
+var ratingAspect="技術面";       // 面向
+var ratings=[];                  // 大家的評分清單
+var ratingFetching=false;
+var trendOpen=false;             // 大家都在看面板
+var trendList=[];                // 搜尋次數前 10
+var trendFetching=false;
 var clientId=getClientId();
 var reqId=0;
 var syncing=false;        // 自動更新進行中（避免重疊）
@@ -1934,6 +1979,119 @@ function beatOnce(){
   fetch(PROXY_BASE+"/beat?id="+encodeURIComponent(clientId)).then(function(r){return r.json();})
     .then(function(j){ if(j&&typeof j.online==="number") el.textContent=j.online; })
     .catch(function(){ /* 代理未連線時維持原值 */ });
+}
+
+/* ===== 用戶自訂評分（社群共享） ===== */
+function fetchRatings(){
+  if(ratingFetching) return; ratingFetching=true;
+  fetch(PROXY_BASE+"/ratings").then(function(r){if(!r.ok)throw 0;return r.json();})
+    .then(function(j){ ratingFetching=false; ratings=(j&&Array.isArray(j.ratings))?j.ratings:[]; renderRatingCards(); })
+    .catch(function(){ ratingFetching=false; renderRatingCards(); });
+}
+function submitRating(){
+  if(!ratingStock) return;
+  var de=document.getElementById("rateDesc"), ne=document.getElementById("rateNick");
+  var desc=de?de.value.trim():"", nick=ne?ne.value.trim():"";
+  if(!desc){ if(de) de.focus(); return; }
+  try{ if(nick) localStorage.setItem("twse_nick",nick); }catch(e){}
+  var btn=document.getElementById("rateSubmit"); if(btn){ btn.disabled=true; btn.textContent="送出中…"; }
+  fetch(PROXY_BASE+"/ratings",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({code:ratingStock.code,name:ratingStock.name,aspect:ratingAspect,desc:desc,nick:nick})})
+    .then(function(r){if(!r.ok)throw 0;return r.json();})
+    .then(function(){ if(de) de.value=""; if(btn){btn.disabled=false;btn.textContent="送出評分";} fetchRatings(); })
+    .catch(function(){ if(btn){btn.disabled=false;btn.textContent="送出失敗，請重試";} });
+}
+function renderRateAC(q){
+  var el=document.getElementById("rateaclist"); if(!el) return;
+  var typed=q&&q.trim();
+  var items=typed?searchNames(q):loadRecent();
+  if(!items.length){ el.className="aclist"; el.innerHTML=""; return; }
+  var hdr=(!typed&&items.length)?'<li class="achdr">最近查詢</li>':'';
+  el.innerHTML=hdr+items.map(function(it){
+    return '<li data-act="ratepick" data-code="'+it.code+'" data-name="'+esc(it.name)+'"><span class="acn">'+esc(it.name)+'</span><span class="acc">'+it.code+'</span></li>';
+  }).join("");
+  el.className="aclist show";
+}
+function hideRateAC(){ var el=document.getElementById("rateaclist"); if(el){ el.className="aclist"; el.innerHTML=""; } }
+function renderRatingCards(){
+  var el=document.getElementById("ratecards"); if(!el) return;
+  if(!ratings.length){ el.innerHTML='<p class="msg">目前還沒有評分，成為第一個分享的人吧！</p>'; return; }
+  var aspColor={"技術面":COL.gold,"籌碼面":COL.coffee,"基本面":COL.coffeeMid};
+  el.innerHTML=ratings.map(function(r){
+    var ac=aspColor[r.aspect]||COL.taupe;
+    var d=new Date(r.ts||Date.now());
+    var when=(d.getMonth()+1)+"/"+d.getDate()+" "+(("0"+d.getHours()).slice(-2))+":"+(("0"+d.getMinutes()).slice(-2));
+    return '<div class="ratecard">'+
+      '<div class="rc-top"><span class="rc-asp" style="border-color:'+ac+';color:'+ac+'">'+esc(r.aspect||"—")+'</span>'+
+      '<button class="rc-stock" data-act="load" data-code="'+esc(r.code)+'" data-name="'+esc(r.name||r.code)+'">'+esc(r.name||"")+' '+esc(r.code)+'</button></div>'+
+      '<div class="rc-desc">'+esc(r.desc||"")+'</div>'+
+      '<div class="rc-foot">— '+esc(r.nick||"匿名")+' · '+when+'</div>'+
+    '</div>';
+  }).join("");
+}
+function renderRatingPanel(){
+  if(dom.ratingBtn) dom.ratingBtn.className="wbtn"+(ratingOpen?" on":"");
+  if(!dom.ratingpanel) return;
+  if(!ratingOpen){ dom.ratingpanel.className="ratingpanel"; dom.ratingpanel.innerHTML=""; return; }
+  var nick=""; try{ nick=localStorage.getItem("twse_nick")||""; }catch(e){}
+  var h='<div class="rate-head"><span class="t">用戶自訂評分</span></div>'+
+    '<div class="rate-acwrap"><input id="rateSearch" type="text" autocomplete="off" placeholder="搜尋股票（代號或名稱）"><ul class="aclist" id="rateaclist"></ul></div>';
+  if(ratingStock){
+    h+='<div class="rate-selected">評分標的：<b>'+esc(ratingStock.name)+' '+ratingStock.code+'</b> <button class="rate-clear" data-act="rateclear">更換</button></div>';
+    h+='<div class="rate-aspects"><span class="rl">面向</span>'+["技術面","籌碼面","基本面"].map(function(a){return '<button class="aspbtn'+(a===ratingAspect?" on":"")+'" data-act="rateaspect" data-aspect="'+a+'">'+a+'</button>';}).join("")+'</div>';
+    h+='<textarea id="rateDesc" class="rate-desc" placeholder="描述內容：你的看法、評分理由…"></textarea>';
+    h+='<input id="rateNick" class="rate-nick" type="text" placeholder="輸入編輯者暱稱" value="'+esc(nick)+'">';
+    h+='<button id="rateSubmit" class="rate-submit" data-act="submitrating">送出評分</button>';
+  } else {
+    h+='<p class="msg">先搜尋並點選一檔股票，即可撰寫評分。</p>';
+  }
+  h+='<div class="rate-cards-h">大家的評分</div><div id="ratecards"></div>';
+  dom.ratingpanel.className="ratingpanel show";
+  dom.ratingpanel.innerHTML=h;
+  renderRatingCards();
+}
+
+/* 首頁／分頁切換：任何面板開啟就隱藏手風琴(main)，無面板(首頁)就顯示 */
+function syncMain(){
+  var anyPanel=watchPanelOpen||portfolioOpen||ratingOpen||trendOpen;
+  if(dom.main) dom.main.style.display=anyPanel?"none":"";
+  if(dom.idxband) dom.idxband.style.display=anyPanel?"none":"";
+  if(dom.idxnote) dom.idxnote.style.display=anyPanel?"none":"";
+  if(dom.homeBtn) dom.homeBtn.className="wbtn"+(anyPanel?"":" on");
+}
+function goHome(){
+  watchPanelOpen=false; portfolioOpen=false; ratingOpen=false; trendOpen=false; editing=false;
+  renderChips(); renderPortfolio(); renderRatingPanel(); renderTrendPanel(); syncMain();
+}
+
+/* ===== 大家都在看（搜尋次數前 10） ===== */
+function fetchTop(){
+  if(trendFetching) return; trendFetching=true;
+  fetch(PROXY_BASE+"/top").then(function(r){if(!r.ok)throw 0;return r.json();})
+    .then(function(j){ trendFetching=false; trendList=(j&&Array.isArray(j.top))?j.top:[]; renderTrendList(); })
+    .catch(function(){ trendFetching=false; renderTrendList(); });
+}
+function renderTrendList(){
+  var el=document.getElementById("trendlist"); if(!el) return;
+  if(!trendList.length){ el.innerHTML='<p class="msg">目前還沒有搜尋紀錄，快去查幾檔股票吧！</p>'; return; }
+  var max=trendList[0]&&trendList[0].count?trendList[0].count:1;
+  el.innerHTML=trendList.map(function(it,i){
+    var nm=NAME_MAP[it.code]||"";
+    var w=Math.max(6,Math.round((it.count/max)*100));
+    return '<button class="trendrow" data-act="load" data-code="'+esc(it.code)+'" data-name="'+esc(nm||it.code)+'">'+
+      '<span class="tr-rank tr-rank'+(i<3?(i+1):0)+'">'+(i+1)+'</span>'+
+      '<span class="tr-main"><span class="tr-name">'+esc(nm||"—")+' <span class="tr-code">'+esc(it.code)+'</span></span>'+
+      '<span class="tr-bar"><span class="tr-fill" style="width:'+w+'%"></span></span></span>'+
+      '<span class="tr-cnt">'+fmtNum(it.count)+' 次</span></button>';
+  }).join("");
+}
+function renderTrendPanel(){
+  if(dom.trendBtn) dom.trendBtn.className="wbtn"+(trendOpen?" on":"");
+  if(!dom.trendpanel) return;
+  if(!trendOpen){ dom.trendpanel.className="trendpanel"; dom.trendpanel.innerHTML=""; return; }
+  dom.trendpanel.className="trendpanel show";
+  dom.trendpanel.innerHTML='<div class="rate-head"><span class="t">大家都在看 · 搜尋次數前 10</span></div><div id="trendlist"></div>';
+  renderTrendList();
 }
 // 自動定時更新：靜默重抓 Yahoo 即時價＋成交量，套回評分模型（無按鈕、不打擾）
 function autoRefresh(){
@@ -2387,6 +2545,7 @@ function loadStock(rawCode,fallbackName){
   try{ localStorage.setItem("twse_last",code); }catch(e){}
   pushRecent(code, fallbackName);
   syncing=false; lastSync=null;
+  try{ fetch(PROXY_BASE+"/hit?code="+encodeURIComponent(code)); }catch(e){}  // 累計搜尋次數（大家都在看）
 
   /* 立即示範資料 */
   renderMain(buildView(code,fallbackName,{},demo,true));
@@ -2464,20 +2623,26 @@ function checkProxy(){
 }
 function init(){
   dom.main=document.getElementById("main");
+  dom.homeBtn=document.getElementById("homeBtn");
   dom.watchBtn=document.getElementById("watchBtn");
   dom.watchpanel=document.getElementById("watchpanel");
   dom.portfolioBtn=document.getElementById("portfolioBtn");
   dom.portfoliopanel=document.getElementById("portfoliopanel");
+  dom.ratingBtn=document.getElementById("ratingBtn");
+  dom.ratingpanel=document.getElementById("ratingpanel");
+  dom.trendBtn=document.getElementById("trendBtn");
+  dom.trendpanel=document.getElementById("trendpanel");
   dom.upd=document.getElementById("upd");
   dom.q=document.getElementById("q");
   dom.ac=document.getElementById("aclist");
   dom.idxband=document.getElementById("idxband");
+  dom.idxnote=document.getElementById("idxnote");
 
   document.getElementById("searchForm").addEventListener("submit",function(e){
     e.preventDefault(); var v=dom.q.value.trim(); if(!v) return;
     var code=resolveQuery(v);
     if(!code){ renderMain({status:"notfound",code:v}); hideAC(); dom.q.blur(); return; }
-    loadStock(code, NAME_MAP[code]||null); dom.q.value=""; hideAC(); dom.q.blur();
+    loadStock(code, NAME_MAP[code]||null); dom.q.value=""; hideAC(); dom.q.blur(); goHome();
   });
   dom.q.addEventListener("input",function(){ var v=dom.q.value; if(v.trim()) renderAC(v); else renderRecent(); });
   dom.q.addEventListener("focus",function(){ if(dom.q.value.trim()) renderAC(dom.q.value); else renderRecent(); });
@@ -2489,9 +2654,14 @@ function init(){
   });
   document.addEventListener("input",function(e){
     if(e.target&&e.target.id==="pfCode"){ var v=e.target.value; if(v.trim()) renderPfAC(v); else hidePfAC(); }
+    if(e.target&&e.target.id==="rateSearch"){ renderRateAC(e.target.value); }
+  });
+  document.addEventListener("focusin",function(e){
+    if(e.target&&e.target.id==="rateSearch"){ renderRateAC(e.target.value); }
   });
   document.addEventListener("focusout",function(e){
     if(e.target&&e.target.id==="pfCode"){ setTimeout(hidePfAC,160); }
+    if(e.target&&e.target.id==="rateSearch"){ setTimeout(hideRateAC,160); }
   });
 
   // 財報時間差使用者覆寫
@@ -2511,8 +2681,15 @@ function init(){
     var t=e.target.closest("[data-act]"); if(!t) return;
     var act=t.getAttribute("data-act");
     if(act==="pick"){ var pc=t.getAttribute("data-code"); loadStock(pc,t.getAttribute("data-name")); dom.q.value=""; hideAC(); dom.q.blur(); }
-    else if(act==="togglewatchpanel"){ watchPanelOpen=!watchPanelOpen; if(watchPanelOpen){ portfolioOpen=false; renderPortfolio(); } else { editing=false; } renderChips(); }
-    else if(act==="toggleportfolio"){ portfolioOpen=!portfolioOpen; if(portfolioOpen){ watchPanelOpen=false; editing=false; renderChips(); } renderPortfolio(); if(portfolioOpen) fetchPortfolioQuotes(); }
+    else if(act==="gohome"){ goHome(); }
+    else if(act==="togglewatchpanel"){ watchPanelOpen=!watchPanelOpen; if(watchPanelOpen){ portfolioOpen=false; ratingOpen=false; trendOpen=false; renderPortfolio(); renderRatingPanel(); renderTrendPanel(); } else { editing=false; } renderChips(); syncMain(); }
+    else if(act==="toggleportfolio"){ portfolioOpen=!portfolioOpen; if(portfolioOpen){ watchPanelOpen=false; ratingOpen=false; trendOpen=false; editing=false; renderChips(); renderRatingPanel(); renderTrendPanel(); } renderPortfolio(); if(portfolioOpen) fetchPortfolioQuotes(); syncMain(); }
+    else if(act==="togglerating"){ ratingOpen=!ratingOpen; if(ratingOpen){ watchPanelOpen=false; portfolioOpen=false; trendOpen=false; editing=false; renderChips(); renderPortfolio(); renderTrendPanel(); } renderRatingPanel(); if(ratingOpen) fetchRatings(); syncMain(); }
+    else if(act==="toggletrend"){ trendOpen=!trendOpen; if(trendOpen){ watchPanelOpen=false; portfolioOpen=false; ratingOpen=false; editing=false; renderChips(); renderPortfolio(); renderRatingPanel(); } renderTrendPanel(); if(trendOpen) fetchTop(); syncMain(); }
+    else if(act==="ratepick"){ ratingStock={code:t.getAttribute("data-code"),name:t.getAttribute("data-name")}; hideRateAC(); pushRecent(ratingStock.code,ratingStock.name); renderRatingPanel(); }
+    else if(act==="rateclear"){ ratingStock=null; renderRatingPanel(); }
+    else if(act==="rateaspect"){ ratingAspect=t.getAttribute("data-aspect"); var bs=document.querySelectorAll("#ratingpanel .aspbtn"); for(var bi=0;bi<bs.length;bi++){ bs[bi].className="aspbtn"+(bs[bi].getAttribute("data-aspect")===ratingAspect?" on":""); } }
+    else if(act==="submitrating"){ submitRating(); }
     else if(act==="addholding"){ addHolding(); }
     else if(act==="delholding"){ var dc=t.getAttribute("data-code"); portfolio=portfolio.filter(function(h){return h.code!==dc;}); savePortfolio(); renderPortfolio(); }
     else if(act==="pfpick"){ var ppc=t.getAttribute("data-code"); var ci=document.getElementById("pfCode"); if(ci) ci.value=ppc; hidePfAC(); var se=document.getElementById("pfShares"); if(se) se.focus(); }
@@ -2521,7 +2698,7 @@ function init(){
     else if(act==="exportdata"){ exportData(); }
     else if(act==="importdata"){ importData(); }
     else if(act==="toggleedit"){ editing=!editing; if(editing) watchPanelOpen=true; renderChips(); }
-    else if(act==="load"){ loadStock(t.getAttribute("data-code"),t.getAttribute("data-name")); }
+    else if(act==="load"){ loadStock(t.getAttribute("data-code"),t.getAttribute("data-name")); goHome(); }
     else if(act==="remove"){ var c=t.getAttribute("data-code"); watch=watch.filter(function(w){return w.code!==c;}); saveWatch(); renderChips(); }
     else if(act==="togglewatch"){
       if(current.status!=="ready") return;
@@ -2551,6 +2728,9 @@ function init(){
 
   renderChips();
   renderPortfolio();
+  renderRatingPanel();
+  renderTrendPanel();
+  syncMain();
   fetchPortfolioQuotes(true);                          // 載入即抓全部庫存報價→標頭損益就緒
   setInterval(function(){ if(portfolio.length && !document.hidden) fetchPortfolioQuotes(true); }, 5000); // 每 5 秒自動更新庫存損益
   renderIndices();
